@@ -5,3 +5,4 @@ replit.nix
 .git
 .config
 .breakpoints
+package-lock.json
