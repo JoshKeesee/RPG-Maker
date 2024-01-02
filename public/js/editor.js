@@ -64,6 +64,7 @@ class Editor {
     map.map[l][y][x] = id;
     this.mapChanges.push({ l, x, y, id });
     map.graphUpdated = false;
+		if (l != "scenery") this.setTile("scenery", x, y, -1);
   }
   run() {
     if (document.pointerLockElement == c && !this.toggled)
@@ -227,7 +228,6 @@ class Editor {
           : this.selected;
         this.checkStructure(dx, dy);
         this.setTile(this.layer, dx, dy, t);
-        if (this.layer == "ground") this.setTile("scenery", dx, dy, -1);
         if (this.autotiling) this.updateAutotiling(dx, dy, this.selected);
       }
     } else if (this.path) {
@@ -253,7 +253,6 @@ class Editor {
                 : this.selected;
               this.checkStructure(x, y);
               this.setTile(this.layer, x, y, t);
-              if (this.layer == "ground") this.setTile("scenery", x, y, -1);
               if (this.autotiling) this.updateAutotiling(x, y, this.selected);
             }
           }
@@ -287,7 +286,6 @@ class Editor {
                 : this.selected;
               this.checkStructure(x, y);
               this.setTile(this.layer, x, y, t);
-              if (this.layer == "ground") this.setTile("scenery", x, y, -1);
               if (this.autotiling) this.updateAutotiling(x, y, this.selected);
             }
           }

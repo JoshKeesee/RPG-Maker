@@ -150,7 +150,8 @@ function update() {
         ...now,
       });
   }
-  for (let id in players) {
+	const p = Object.keys(players).sort((a, b) => players[a].y - players[b].y);
+  p.forEach(id => {
     let player = players[id];
     ctx.drawImage(
       images[player.gender],
@@ -163,7 +164,7 @@ function update() {
       player.width,
       player.height,
     );
-  }
+  });
   map.drawLayers(["structure"]);
   then = now;
   editor.run();
