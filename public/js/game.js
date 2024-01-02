@@ -90,7 +90,7 @@ function update() {
   c.height = window.innerHeight;
   if (!Object.keys(map.map).length || map.loading) {
     loadingOpacity += 0.2 * (1 - loadingOpacity);
-    const p = map.loadingProgress,
+    const p = Math.min(map.loadingProgress, map.loadingMax),
       max = map.loadingMax;
     const d = Math.max(0, (100 / max) * p);
     ctx.fillStyle = ctx.strokeStyle = "#fff";
@@ -108,22 +108,22 @@ function update() {
     info.forEach((v, i) => {
       ctx.fillStyle = ctx.strokeStyle = "#fff";
       ctx.font = "12px sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText(v, c.width / 2 - max / 2, c.height / 2 + 60 + i * 15);
+      ctx.textAlign = "center";
+      ctx.fillText(v, c.width / 2, c.height / 2 + 60 + i * 15);
     });
-    if (d.toFixed(1) >= 100) {
-      setTimeout(() => {
-        map.loading = false;
-        map.loadingInfo = [];
-        mapLoaded = true;
-      }, 1000);
+    if (map.loadingProgress.toFixed(1) == map.loadingMax) {
 			map.loadingInfo.push("Updating pathfinding data...");
 			map.updateGraph().then(() => {
 				map.loadingInfo.pop();
 				map.loadingInfo.push("Pathfinding data updated!");
 				map.loadingInfo.push("Finished loading world!");
+				setTimeout(() => {
+					map.loading = false;
+					map.loadingInfo = [];
+					mapLoaded = true;
+				}, 1000);
 			});
-      map.loadingProgress = 0;
+      map.loadingProgress += 1;
     }
     return;
   }
@@ -210,9 +210,11 @@ const init = async () => {
 
   await connect();
 
-  map.loadingInfo.push(`Downloading world data...`);
+	const author = "JoshKeesee", project = "test";
 
-  socket.emit("init", { author: "JoshKeesee", project: "test" }, async (data, ws) => {
+  map.loadingInfo.push(`Downloading world data for ${author}/${project}...`);
+
+  socket.emit("init", { author, project }, async (data, ws) => {
     map.loadingInfo.pop();
     map.loadingInfo.push(`Downloaded world data (${ws})`);
     for (let id in data.players) players[id] = data.players[id];
@@ -234,7 +236,6 @@ const init = async () => {
 			map.addLayer("structure");
 			await map.updateLayers();
 			await map.addScenery();
-			map.loadMap(structuredClone(map.map));
 		}
   });
 

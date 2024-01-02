@@ -1,5 +1,6 @@
 const { astar, Graph } = require("../public/js/astar");
 const stats = require("./stats");
+const zlib = require("zlib");
 
 class Map {
   constructor(opts = {}) {
@@ -117,6 +118,49 @@ class Map {
     this.graphUpdated = false;
     this.map = map.map;
   }
+	async compressString(str) {
+		const buffer = Buffer.from(str);
+		const compressed = zlib.deflateRawSync(buffer);
+		return compressed.toString("base64");
+	}
+	async decompressString(str) {
+		const buffer = Buffer.from(str, "base64");
+		const decompressed = zlib.inflateRawSync(buffer);
+		return decompressed.toString();
+	}
+	async compress2DArray(arr) {
+		let str = "";
+		for (let i = 0; i < arr.length; i++) {
+			for (let j = 0; j < arr[i].length; j++) str += arr[i][j] + ";";
+		}
+		return str;
+	}
+	async decompress2DArray(str, w, h) {
+		let arr = [];
+		const strArr = str.split(";");
+		for (let i = 0; i < h; i++) {
+			arr.push([]);
+			for (let j = 0; j < w; j++) {
+				arr[i].push(parseInt(strArr[i * w + j]));
+			}
+		}
+		return arr;
+	}
+	async compress(map) {
+		let str = "";
+		const k = Object.keys(map);
+		for (let i = 0; i < k.length; i++) str += await this.compress2DArray(map[k[i]]);
+		return await this.compressString(str);
+	}
+	async decompress(str, w, h, l) {
+		let map = {};
+		str = await this.decompressString(str);
+		for (let i = 0; i < l.length; i++) {
+			const s = str.split(";").slice(i * w * h, (i + 1) * w * h).join(";");
+			map[l[i]] = await this.decompress2DArray(s, w, h);
+		}
+		return map;
+	}
 }
 
 module.exports = Map;

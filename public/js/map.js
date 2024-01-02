@@ -198,15 +198,17 @@ class Map {
         this.map[l].push([]);
         for (let j = 0; j < this.w; j++) {
           this.map[l][i].push(m[l][i][j]);
-          this.loadingProgress +=
-            this.loadingMax / (keys.length * this.w * this.h);
-          const t = `Loading ${l} layer (${k + 1}/${keys.length})`;
-          const last = this.loadingInfo[this.loadingInfo.length - 1];
-          if (last != t) {
-            this.loadingInfo.pop();
-            this.loadingInfo.push(last.replace("Loading", "Loaded"));
-            this.loadingInfo.push(t);
-          }
+					setTimeout(() => {
+						this.loadingProgress +=
+							this.loadingMax / (keys.length * this.w * this.h);
+						const t = `Loading ${l} layer (${k + 1}/${keys.length})`;
+						const last = this.loadingInfo[this.loadingInfo.length - 1];
+						if (last != t) {
+							this.loadingInfo.pop();
+							this.loadingInfo.push(last.replace("Loading", "Loaded"));
+							this.loadingInfo.push(t);
+						}
+					}, 1);
         }
       }
     });
