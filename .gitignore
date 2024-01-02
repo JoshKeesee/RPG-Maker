@@ -1,2 +1,6 @@
-./node_modules
-./projects
+node_modules
+projects
+.replit
+replit.nix
+.git
+.config
