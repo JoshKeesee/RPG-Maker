@@ -190,7 +190,7 @@ class Map {
     this.items = map.items || this.items;
     this.graphUpdated = false;
     this.loadingProgress = 0;
-		const m = map.map ? map.map : map;
+    const m = map.map ? map.map : map;
     const keys = Object.keys(m);
     keys.forEach((l, k) => {
       this.map[l] = [];
@@ -198,20 +198,15 @@ class Map {
         this.map[l].push([]);
         for (let j = 0; j < this.w; j++) {
           this.map[l][i].push(m[l][i][j]);
-          setTimeout(
-            () => {
-              this.loadingProgress +=
-                this.loadingMax / (keys.length * this.w * this.h);
-              const t = `Loading ${l} layer (${k + 1}/${keys.length})`;
-              const last = this.loadingInfo[this.loadingInfo.length - 1];
-              if (last != t) {
-                this.loadingInfo.pop();
-                this.loadingInfo.push(last.replace("Loading", "Loaded"));
-                this.loadingInfo.push(t);
-              }
-            },
-            (k + 1) / 1000,
-          );
+          this.loadingProgress +=
+            this.loadingMax / (keys.length * this.w * this.h);
+          const t = `Loading ${l} layer (${k + 1}/${keys.length})`;
+          const last = this.loadingInfo[this.loadingInfo.length - 1];
+          if (last != t) {
+            this.loadingInfo.pop();
+            this.loadingInfo.push(last.replace("Loading", "Loaded"));
+            this.loadingInfo.push(t);
+          }
         }
       }
     });
