@@ -154,6 +154,10 @@ function update() {
 	const p = Object.keys(players).sort((a, b) => players[a].y - players[b].y);
   p.forEach(id => {
     const p = players[id];
+    const ind = Object.values(players).findIndex(e => e.id == p.id);
+    const n = p.name || "Player " + (ind + 1);
+    ctx.font = "15px sans-serif";
+    ctx.textAlign = "center";
     
     ctx.drawImage(
       images[p.gender],
@@ -168,7 +172,7 @@ function update() {
     );
 
     const s = 12;
-    const o = 20;
+    const o = ctx.measureText(n).width / 2 + 5;
     const ax = p.width / 2;
     const ay = s;
     const minX = camera.dx + o - (c.width / 2) / camera.dz + c.width / 2;
@@ -178,10 +182,11 @@ function update() {
     const tx = Math.max(Math.min(p.x + ax, maxX), minX);
     const ty = Math.max(Math.min(p.y + ay, maxY), minY);
     const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
+    const angle = Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2;
     if (outOfViewport) {
       ctx.save();
       ctx.translate(tx, ty);
-      ctx.rotate(Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2);
+      ctx.rotate(angle);
       ctx.translate(-tx, -ty);
     }
     ctx.beginPath();
@@ -191,6 +196,14 @@ function update() {
     ctx.closePath();
     ctx.fillStyle = p.color;
     ctx.fill();
+    ctx.fillStyle = "#fff";
+    if (angle > Math.PI / 2 && outOfViewport) {
+      ctx.translate(tx, ty);
+      ctx.rotate(Math.PI);
+      ctx.translate(-tx, -ty);
+      ctx.translate(0, s * 4 - 5);
+    }
+    ctx.fillText(n, tx, ty - s - 5);
     if (outOfViewport) ctx.restore();
   });
   map.drawLayers(["structure"]);

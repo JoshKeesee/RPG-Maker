@@ -31,18 +31,15 @@ class Player {
       clicked: false,
     };
 
-    // let spawn = true;
-    // while (spawn) {
-    // 	this.x = Math.floor(Math.random() * map.w);
-    // 	this.y = Math.floor(Math.random() * map.h);
-    // 	if (stats.dontCollide.includes(map.map.scenery[this.y][this.x]) && stats.dontCollide.includes(map.map.structure[this.y][this.x])) spawn = false;
-    // }
+    let spawn = true;
+    while (spawn) {
+    	this.x = Math.floor(Math.random() * map.w);
+    	this.y = Math.floor(Math.random() * map.h);
+    	if (stats.dontCollide.includes(map.map.scenery[this.y][this.x]) && stats.dontCollide.includes(map.map.structure[this.y][this.x])) spawn = false;
+    }
 
-    // this.x *= map.tsize;
-    // this.y *= map.tsize;
-
-    this.x = map.tsize;
-    this.y = map.tsize;
+    this.x *= map.tsize;
+    this.y *= map.tsize;
 
     c.addEventListener("mousemove", (e) => {
       this.mouse.x = e.clientX;
@@ -192,5 +189,6 @@ class Player {
 
 onkeydown = (e) => (!e.repeat ? (keys[e.key.toLowerCase()] = true) : "");
 onkeyup = (e) => delete keys[e.key.toLowerCase()];
+onblur = (e) => (Object.keys(keys).forEach((k) => delete keys[k]));
 
 export { Player, keys };
