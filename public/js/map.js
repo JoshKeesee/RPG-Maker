@@ -39,7 +39,7 @@ class Map {
     const end = (v, v2, v3) =>
       Math.min(
         v3,
-        Math.ceil((v + (v2 / 2 / camera.dz - v2 / 2) + v2) / this.tsize),
+        Math.ceil((v + v2 + (v2 / 2 / camera.dz - v2 / 2)) / this.tsize),
       );
     const sx = start(camera.dx, c.width, this.w);
     const ex = end(camera.dx, c.width, this.w);

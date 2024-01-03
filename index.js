@@ -57,7 +57,8 @@ io.on("connection", (socket) => {
   });
   socket.on("player-join", (data) => {
 		if (!players[author]) players[author] = { [project]: {} };
-    const pl = players[author][project];
+    let pl = players[author][project];
+    if (!pl) pl = players[author][project] = {};
     pl[socket.id] = data;
     socket.broadcast.emit("player-join", data);
   });
@@ -79,6 +80,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
 		if (!players[author]) return;
     const pl = players[author][project];
+    if (!pl) return;
     delete pl[socket.id];
 		if (!Object.keys(pl).length) {
 			delete players[author][project];

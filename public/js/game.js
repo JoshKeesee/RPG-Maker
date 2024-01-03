@@ -88,6 +88,7 @@ function update() {
   ctx.clearRect(0, 0, c.width, c.height);
   c.width = window.innerWidth;
   c.height = window.innerHeight;
+  ctx.globalAlpha = 1;
   if (!Object.keys(map.map).length || map.loading) {
     loadingOpacity += 0.2 * (1 - loadingOpacity);
     const p = Math.min(map.loadingProgress, map.loadingMax),
@@ -152,18 +153,45 @@ function update() {
   }
 	const p = Object.keys(players).sort((a, b) => players[a].y - players[b].y);
   p.forEach(id => {
-    let player = players[id];
+    const p = players[id];
+    
     ctx.drawImage(
-      images[player.gender],
-      player.dir * character.width,
-      player.frame * character.height,
+      images[p.gender],
+      p.dir * character.width,
+      p.frame * character.height,
       character.width,
       character.height,
-      player.x,
-      player.y,
-      player.width,
-      player.height,
+      p.x,
+      p.y,
+      p.width,
+      p.height,
     );
+
+    const s = 12;
+    const o = 20;
+    const ax = p.width / 2;
+    const ay = s;
+    const minX = camera.dx + o - (c.width / 2) / camera.dz + c.width / 2;
+    const minY = camera.dy + o - (c.height / 2) / camera.dz + c.height / 2;
+    const maxX = camera.dx + c.width - o + (c.width / (2 * camera.dz) - (c.width / 2));
+    const maxY = camera.dy + c.height - o + (c.height / (2 * camera.dz) - (c.height / 2));
+    const tx = Math.max(Math.min(p.x + ax, maxX), minX);
+    const ty = Math.max(Math.min(p.y + ay, maxY), minY);
+    const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
+    if (outOfViewport) {
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2);
+      ctx.translate(-tx, -ty);
+    }
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - s, ty - s);
+    ctx.lineTo(tx + s, ty - s);
+    ctx.closePath();
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    if (outOfViewport) ctx.restore();
   });
   map.drawLayers(["structure"]);
   then = now;

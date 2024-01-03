@@ -2,6 +2,8 @@ import { map } from "./map.js";
 import { camera } from "./camera.js";
 import { touch, editor, c, stats } from "./game.js";
 
+const colors = ["#ff0000", "#0000ff", "#ffff00", "#00ff00", "#ff00ff", "#ff8000", "#8000ff", "#00ffff", "#008000", "#800000", "#000080", "#808000"];
+
 const keys = {};
 
 class Player {
@@ -21,7 +23,7 @@ class Player {
     this.dir = 0;
     this.frame = 0;
     this.gender = Math.random() <= 0.5 ? "boy" : "girl";
-    this.color = this.generateColor();
+    this.color = colors[Math.floor(Math.random() * colors.length)];
 
     this.mouse = {
       x: 0,
@@ -29,15 +31,18 @@ class Player {
       clicked: false,
     };
 
-    let spawn = true;
-    while (spawn) {
-    	this.x = Math.floor(Math.random() * map.w);
-    	this.y = Math.floor(Math.random() * map.h);
-    	if (stats.dontCollide.includes(map.map.scenery[this.y][this.x]) && stats.dontCollide.includes(map.map.structure[this.y][this.x])) spawn = false;
-    }
+    // let spawn = true;
+    // while (spawn) {
+    // 	this.x = Math.floor(Math.random() * map.w);
+    // 	this.y = Math.floor(Math.random() * map.h);
+    // 	if (stats.dontCollide.includes(map.map.scenery[this.y][this.x]) && stats.dontCollide.includes(map.map.structure[this.y][this.x])) spawn = false;
+    // }
 
-    this.x *= map.tsize;
-    this.y *= map.tsize;
+    // this.x *= map.tsize;
+    // this.y *= map.tsize;
+
+    this.x = map.tsize;
+    this.y = map.tsize;
 
     c.addEventListener("mousemove", (e) => {
       this.mouse.x = e.clientX;
