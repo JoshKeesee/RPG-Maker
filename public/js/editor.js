@@ -47,11 +47,15 @@ class Editor {
       this.touchX = x;
       this.touchY = y;
     });
+    document.addEventListener("visibilitychange", (e) => e.target.hidden && this.toggled && this.toggle());
   }
   toggle() {
     this.toggled = !this.toggled;
-    if (this.toggled) camera.setZoom(0.7);
-    else {
+    if (this.toggled) {
+      if (document.pointerLockElement != c) c.requestPointerLock().catch(() => {});
+      camera.setZoom(0.7);
+    } else {
+      if (document.pointerLockElement == c) document.exitPointerLock();
       camera.setZoom(1);
       if (this.mapChanges.length > 0)
         socket.emit("map-update", this.mapChanges);
@@ -67,13 +71,8 @@ class Editor {
 		if (l != "scenery") this.setTile("scenery", x, y, -1);
   }
   run() {
-    if (document.pointerLockElement == c && !this.toggled)
-      document.exitPointerLock();
     if (!this.toggled) return;
-    if (document.pointerLockElement != c)
-      c.requestPointerLock()
-        .then(() => {})
-        .catch(() => {});
+    if (keys["escape"]) return this.toggle();
     if (keys["w"] || keys["arrowup"]) camera.y -= 10;
     if (keys["s"] || keys["arrowdown"]) camera.y += 10;
     if (keys["a"] || keys["arrowleft"]) camera.x -= 10;

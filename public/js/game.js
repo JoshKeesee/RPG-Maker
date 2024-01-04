@@ -193,16 +193,16 @@ function update() {
     ctx.moveTo(tx, ty);
     ctx.lineTo(tx - s, ty - s);
     ctx.lineTo(tx + s, ty - s);
-    ctx.closePath();
     ctx.fillStyle = p.color;
     ctx.fill();
-    ctx.fillStyle = "#fff";
+    ctx.closePath();
     if (angle > Math.PI / 2 && outOfViewport) {
       ctx.translate(tx, ty);
       ctx.rotate(Math.PI);
       ctx.translate(-tx, -ty);
       ctx.translate(0, s * 4 - 5);
     }
+    ctx.fillStyle = "#fff";
     ctx.fillText(n, tx, ty - s - 5);
     if (outOfViewport) ctx.restore();
   });
