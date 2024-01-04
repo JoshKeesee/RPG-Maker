@@ -1,9 +1,9 @@
 import Touch from "./touch.js";
 import Editor from "./editor.js";
-import images from "./images.js";
 import Map from "./map.js";
 import Camera from "./camera.js";
 import Player from "./player.js";
+import images from "./images.js";
 
 class Game {
   constructor() {
