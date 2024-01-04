@@ -1,308 +1,307 @@
 import Touch from "./touch.js";
 import Editor from "./editor.js";
 import images from "./images.js";
-import { camera } from "./camera.js";
-import { map } from "./map.js";
-import { Player } from "./player.js";
+import Map from "./map.js";
+import Camera from "./camera.js";
+import Player from "./player.js";
 
 const character = {
   width: 100,
   height: 100,
 };
 
-let stats = {};
-
-const c = document.querySelector("#game");
-const ctx = c.getContext("2d");
-const touch = new Touch(c);
-const editor = new Editor(c);
-const socket = io({
-  transports: ["websocket"],
-  upgrade: false,
-  autoConnect: false,
-  forceNew: true,
-});
-let players = {};
-let player;
-let then = performance.now(),
-  thenpf = then,
-  thenf = then,
-  frame = 0,
-  mobile = false,
-  g = null,
-  mapLoaded = false,
-  loadingOpacity = 1;
-
-const mapLoad = () =>
-  new Promise((resolve) => {
-    const g = setInterval(() => {
-      if (mapLoaded) {
-        clearInterval(g);
-        resolve();
-      }
-    }, 100);
-  });
-
-const connect = () =>
-  new Promise((resolve) => {
-    if (socket.connected) resolve();
-    socket.connect();
-    socket.on("connect", () => resolve());
-  });
-
-socket.on("player-join", (data) => {
-  players[data.id] = data;
-});
-
-socket.on("player-move", (data) => {
-  if (data.id && players[data.id])
-    Object.keys(data).forEach((k) => (players[data.id][k] = data[k]));
-});
-
-socket.on("player-disconnect", (id) => {
-  delete players[id];
-});
-
-socket.on("map-update", (data) => {
-  data.forEach((v) => editor.setTile(v.l, v.x, v.y, v.id));
-});
-
-socket.on("disconnect", async () => {
-  if (map.loading) {
-    mapLoaded = false;
-    map.loadingInfo.push("Uh oh, the server disconnected. Reconnecting...");
-    await connect();
-    map.loadingInfo.pop();
-    map.loadingInfo.push("Reconnected!");
-    init();
-  } else await connect();
-});
-
-function update() {
-  g = requestAnimationFrame(update);
-  pFrames();
-  frames();
-  const now = performance.now();
-  const delta = now - then;
-  if (delta < 1000 / 60) return;
-  ctx.clearRect(0, 0, c.width, c.height);
-  c.width = window.innerWidth;
-  c.height = window.innerHeight;
-  ctx.globalAlpha = 1;
-  if (!Object.keys(map.map).length || map.loading) {
-    loadingOpacity += 0.2 * (1 - loadingOpacity);
-    const p = Math.min(map.loadingProgress, map.loadingMax),
-      max = map.loadingMax;
-    const d = Math.max(0, (100 / max) * p);
-    ctx.fillStyle = ctx.strokeStyle = "#fff";
-    ctx.font = "20px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillStyle = ctx.strokeStyle = "#ababab";
-    ctx.fillText(
-      "Loading... " + (d > 0 ? d.toFixed(1) + "%" : ""),
-      c.width / 2,
-      c.height / 2,
-    );
-    ctx.strokeRect(c.width / 2 - max / 2, c.height / 2 + 20, max, 20);
-    ctx.fillRect(c.width / 2 - max / 2, c.height / 2 + 20, p, 20);
-    const info = map.loadingInfo.slice(-10);
-    info.forEach((v, i) => {
-      ctx.fillStyle = ctx.strokeStyle = "#fff";
-      ctx.font = "12px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(v, c.width / 2, c.height / 2 + 60 + i * 15);
+class Game {
+  constructor() {
+    this.stats = {};
+    this.c = document.querySelector("#game");
+    this.ctx = this.c.getContext("2d");
+    this.touch = new Touch(this.c);
+    this.editor = new Editor(this.c);
+    this.map = new Map();
+    this.camera = new Camera();
+    this.images = images;
+    this.socket = io({
+      transports: ["websocket"],
+      upgrade: false,
+      autoConnect: false,
+      forceNew: true,
     });
-    if (map.loadingProgress.toFixed(1) == map.loadingMax) {
-			map.loadingInfo.push("Updating pathfinding data...");
-			map.updateGraph().then(() => {
-				map.loadingInfo.pop();
-				map.loadingInfo.push("Pathfinding data updated!");
-				map.loadingInfo.push("Finished loading world!");
-				setTimeout(() => {
-					map.loading = false;
-					map.loadingInfo = [];
-					mapLoaded = true;
-				}, 1000);
-			});
-      map.loadingProgress += 1;
-    }
-    return;
-  }
-  loadingOpacity += 0.2 * (0 - loadingOpacity);
-  camera.update();
-  ctx.save();
-  ctx.translate(c.width / 2, c.height / 2);
-  ctx.scale(camera.dz.toFixed(4), camera.dz.toFixed(4));
-  ctx.translate(
-    -camera.dx.toFixed(0) - c.width / 2,
-    -camera.dy.toFixed(0) - c.height / 2,
-  );
-  map.drawLayers(["ground", "scenery"]);
-  if (player) {
-    const prev = structuredClone(player);
-    player.update();
-    const now = structuredClone(player);
-    Object.keys(prev).forEach((k) => {
-      if (prev[k] != now[k]) now[k] = prev[k];
+    this.players = {};
+    this.player = null;
+    this.then = performance.now();
+    this.thenpf = this.then;
+    this.thenf = this.then;
+    this.frame = 0;
+    this.mobile = false;
+    this.g = null;
+    this.mapLoaded = false;
+    this.loadingOpacity = 1;
+    this.keys = {};
+    onkeydown = (e) => (!e.repeat ? (this.keys[e.key.toLowerCase()] = true) : "");
+    onkeyup = (e) => delete this.keys[e.key.toLowerCase()];
+    onblur = (e) => (Object.keys(this.keys).forEach((k) => delete this.keys[k]));
+    this.socket.on("player-join", (data) => {
+      game.players[data.id] = data;
     });
-    if (Object.keys(now).length > 0)
-      socket.emit("player-move", {
-        id: player.id,
-        ...now,
+    this.socket.on("player-move", (data) => {
+      if (data.id && game.players[data.id])
+        Object.keys(data).forEach((k) => (game.players[data.id][k] = data[k]));
+    });
+    this.socket.on("player-disconnect", (id) => {
+      delete game.players[id];
+    });
+    this.socket.on("map-update", (data) => {
+      data.forEach((v) => editor.setTile(v.l, v.x, v.y, v.id));
+    });
+    this.socket.on("disconnect", async () => {
+      if (game.map.loading) {
+        game.mapLoaded = false;
+        game.map.loadingInfo.push("Uh oh, the server disconnected. Reconnecting...");
+        await this.connect();
+        game.map.loadingInfo.pop();
+        game.map.loadingInfo.push("Reconnected!");
+        init();
+      } else await this.connect();
+    });
+    this.connect = () =>
+      new Promise((resolve) => {
+        if (this.socket.connected) resolve();
+        this.socket.connect();
+        this.socket.on("connect", () => resolve());
       });
   }
-	const p = Object.keys(players).sort((a, b) => players[a].y - players[b].y);
-  p.forEach(id => {
-    const p = players[id];
-    const ind = Object.values(players).findIndex(e => e.id == p.id);
-    const n = p.name || "Player " + (ind + 1);
-    ctx.font = "15px sans-serif";
-    ctx.textAlign = "center";
-    
-    ctx.drawImage(
-      images[p.gender],
-      p.dir * character.width,
-      p.frame * character.height,
-      character.width,
-      character.height,
-      p.x,
-      p.y,
-      p.width,
-      p.height,
-    );
-
-    const s = 12;
-    const o = ctx.measureText(n).width / 2 + 5;
-    const ax = p.width / 2;
-    const ay = s;
-    const minX = camera.dx + o - (c.width / 2) / camera.dz + c.width / 2;
-    const minY = camera.dy + o - (c.height / 2) / camera.dz + c.height / 2;
-    const maxX = camera.dx + c.width - o + (c.width / (2 * camera.dz) - (c.width / 2));
-    const maxY = camera.dy + c.height - o + (c.height / (2 * camera.dz) - (c.height / 2));
-    const tx = Math.max(Math.min(p.x + ax, maxX), minX);
-    const ty = Math.max(Math.min(p.y + ay, maxY), minY);
-    const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
-    const angle = Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2;
-    if (outOfViewport) {
-      ctx.save();
-      ctx.translate(tx, ty);
-      ctx.rotate(angle);
-      ctx.translate(-tx, -ty);
-    }
-    ctx.beginPath();
-    ctx.moveTo(tx, ty);
-    ctx.lineTo(tx - s, ty - s);
-    ctx.lineTo(tx + s, ty - s);
-    ctx.fillStyle = p.color;
-    ctx.fill();
-    ctx.closePath();
-    if (angle > Math.PI / 2 && outOfViewport) {
-      ctx.translate(tx, ty);
-      ctx.rotate(Math.PI);
-      ctx.translate(-tx, -ty);
-      ctx.translate(0, s * 4 - 5);
-    }
-    ctx.fillStyle = "#fff";
-    ctx.fillText(n, tx, ty - s - 5);
-    if (outOfViewport) ctx.restore();
-  });
-  map.drawLayers(["structure"]);
-  then = now;
-  editor.run();
-  ctx.restore();
-  if (editor.toggled) {
-    editor.drawCenter();
-    editor.updateData();
+  mapLoad() {
+    return new Promise((resolve) => {
+      const g = setInterval(() => {
+        if (this.mapLoaded) {
+          clearInterval(g);
+          resolve();
+        }
+      }, 100);
+    });
   }
-  touch.draw();
-
-  ctx.globalAlpha = loadingOpacity;
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, c.width, c.height);
+  pFrames() {
+    const now = performance.now();
+    const delta = now - this.thenpf;
+    if (!this.player) return;
+    if (delta < 1000 / Math.max(Math.abs(this.player.xVel), Math.abs(this.player.yVel), 1))
+      return;
+    this.player.frames();
+    this.thenpf = now;
+  }
+  frames() {
+    const now = performance.now();
+    const delta = now - this.thenf;
+    if (delta < 150) return;
+    this.frame++;
+    if (this.frame > 3) this.frame = 0;
+    this.thenf = now;
+  }
+  update() {
+    this.g = requestAnimationFrame(() => this.update());
+    this.pFrames();
+    this.frames();
+    const now = performance.now();
+    const delta = now - this.then;
+    if (delta < 1000 / 60) return;
+    this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+    this.c.width = window.innerWidth;
+    this.c.height = window.innerHeight;
+    this.ctx.globalAlpha = 1;
+    if (!Object.keys(this.map.map).length || this.map.loading) {
+      this.loadingOpacity += 0.2 * (1 - this.loadingOpacity);
+      const p = Math.min(this.map.loadingProgress, this.map.loadingMax),
+        max = this.map.loadingMax;
+      const d = Math.max(0, (100 / max) * p);
+      this.ctx.fillStyle = this.ctx.strokeStyle = "#fff";
+      this.ctx.font = "20px sans-serif";
+      this.ctx.textAlign = "center";
+      this.ctx.fillStyle = this.ctx.strokeStyle = "#ababab";
+      this.ctx.fillText(
+        "Loading... " + (d > 0 ? d.toFixed(1) + "%" : ""),
+        this.c.width / 2,
+        this.c.height / 2,
+      );
+      this.ctx.strokeRect(this.c.width / 2 - max / 2, this.c.height / 2 + 20, max, 20);
+      this.ctx.fillRect(this.c.width / 2 - max / 2, this.c.height / 2 + 20, p, 20);
+      const info = this.map.loadingInfo.slice(-10);
+      info.forEach((v, i) => {
+        this.ctx.fillStyle = this.ctx.strokeStyle = "#fff";
+        this.ctx.font = "12px sans-serif";
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(v, this.c.width / 2, this.c.height / 2 + 60 + i * 15);
+      });
+      if (this.map.loadingProgress.toFixed(1) == this.map.loadingMax) {
+        this.map.loadingInfo.push("Updating pathfinding data...");
+        this.map.updateGraph().then(() => {
+          this.map.loadingInfo.pop();
+          this.map.loadingInfo.push("Pathfinding data updated!");
+          this.map.loadingInfo.push("Finished loading world!");
+          setTimeout(() => {
+            this.map.loading = false;
+            this.map.loadingInfo = [];
+            this.mapLoaded = true;
+          }, 1000);
+        });
+        this.map.loadingProgress += 1;
+      }
+      return;
+    }
+    this.loadingOpacity += 0.2 * (0 - this.loadingOpacity);
+    this.camera.update();
+    this.ctx.save();
+    this.ctx.translate(this.c.width / 2, this.c.height / 2);
+    this.ctx.scale(this.camera.dz.toFixed(4), this.camera.dz.toFixed(4));
+    this.ctx.translate(
+      -this.camera.dx.toFixed(0) - this.c.width / 2,
+      -this.camera.dy.toFixed(0) - this.c.height / 2,
+    );
+    this.map.drawLayers(["ground", "scenery"]);
+    if (this.player) {
+      const prev = structuredClone(this.player);
+      this.player.update();
+      const now = structuredClone(this.player);
+      Object.keys(prev).forEach((k) => {
+        if (prev[k] != now[k]) now[k] = prev[k];
+      });
+      if (Object.keys(now).length > 0)
+        this.socket.emit("player-move", {
+          id: this.player.id,
+          ...now,
+        });
+    }
+    const p = Object.keys(this.players).sort((a, b) => this.players[a].y - this.players[b].y);
+    p.forEach(id => {
+      const p = this.players[id];
+      const ind = Object.values(this.players).findIndex(e => e.id == p.id);
+      const n = p.name || "Player " + (ind + 1);
+      this.ctx.font = "15px sans-serif";
+      this.ctx.textAlign = "center";
+      
+      this.ctx.drawImage(
+        images[p.gender],
+        p.dir * character.width,
+        p.frame * character.height,
+        character.width,
+        character.height,
+        p.x,
+        p.y,
+        p.width,
+        p.height,
+      );
+  
+      const s = 12;
+      const o = this.ctx.measureText(n).width / 2 + 5;
+      const ax = p.width / 2;
+      const ay = s;
+      const minX = this.camera.dx + o - (this.c.width / 2) / this.camera.dz + this.c.width / 2;
+      const minY = this.camera.dy + o - (this.c.height / 2) / this.camera.dz + this.c.height / 2;
+      const maxX = this.camera.dx + this.c.width - o + (this.c.width / (2 * this.camera.dz) - (this.c.width / 2));
+      const maxY = this.camera.dy + this.c.height - o + (this.c.height / (2 * this.camera.dz) - (this.c.height / 2));
+      const tx = Math.max(Math.min(p.x + ax, maxX), minX);
+      const ty = Math.max(Math.min(p.y + ay, maxY), minY);
+      const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
+      const angle = Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2;
+      if (outOfViewport) {
+        this.ctx.save();
+        this.ctx.translate(tx, ty);
+        this.ctx.rotate(angle);
+        this.ctx.translate(-tx, -ty);
+      }
+      this.ctx.beginPath();
+      this.ctx.moveTo(tx, ty);
+      this.ctx.lineTo(tx - s, ty - s);
+      this.ctx.lineTo(tx + s, ty - s);
+      this.ctx.fillStyle = p.color;
+      this.ctx.fill();
+      this.ctx.closePath();
+      if (angle > Math.PI / 2 && outOfViewport) {
+        this.ctx.translate(tx, ty);
+        this.ctx.rotate(Math.PI);
+        this.ctx.translate(-tx, -ty);
+        this.ctx.translate(0, s * 4 - 5);
+      }
+      this.ctx.fillStyle = "#fff";
+      this.ctx.fillText(n, tx, ty - s - 5);
+      if (outOfViewport) this.ctx.restore();
+    });
+    this.map.drawLayers(["structure"]);
+    this.then = now;
+    this.editor.run();
+    this.ctx.restore();
+    if (this.editor.toggled) {
+      this.editor.drawCenter();
+      this.editor.updateData();
+    }
+    this.touch.draw();
+  
+    this.ctx.globalAlpha = this.loadingOpacity;
+    this.ctx.fillStyle = "#000";
+    this.ctx.fillRect(0, 0, this.c.width, this.c.height);
+  }
+  async init() {
+    this.players = {};
+    if (this.map) this.map.clear();
+  
+    await this.connect();
+  
+    const author = "JoshKeesee", project = "test";
+  
+    this.map.loadingInfo.push(`Downloading world data for ${author}/${project}...`);
+  
+    this.socket.emit("init", { author, project }, async (data, ws) => {
+      this.map.loadingInfo.pop();
+      this.map.loadingInfo.push(`Downloaded world data (${ws})`);
+      for (let id in data.players) this.players[id] = data.players[id];
+      const l = Object.keys(this.players).length;
+      this.map.loadingInfo.push(`Loaded ${l} player${l != 1 ? "s" : ""}!`);
+      this.stats = data.stats;
+      this.map.loadingInfo.push(`Loaded item and tile data!`);
+      if (data.map) {
+        this.map.loadingInfo.push(
+          `Downloaded this.map, loading ${
+            data.map.w * data.map.h * Object.keys(data.map.map).length
+          } tiles...`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+        );
+        this.map.loadMap(data.map);
+      } else {
+        this.map.loadingInfo.push("Failed to load map! Creating new map...");
+        this.map.addLayer("ground");
+        this.map.addLayer("scenery");
+        this.map.addLayer("structure");
+        await this.map.updateLayers();
+        await this.map.addScenery();
+      }
+    });
+  
+    await this.mapLoad();
+  
+    this.player = new Player(this.socket.id);
+    this.players[this.socket.id] = this.player;
+    this.socket.emit("player-join", this.player);
+  
+    const os = this.camera.smoothing;
+    const r = (min, max) => Math.floor(Math.random() * (max - min)) + min;
+  
+    const coords = [
+      // { x: Math.random() * this.map.w * this.map.tsize, y: Math.random() * this.map.h * this.map.tsize, z: r(0.5, 1), smoothing: 0.05, m: true },
+    ];
+  
+    for (let i = 0; i < coords.length; i++) await this.camera.set(coords[i], 100);
+    this.camera.set({ z: 1, smoothing: os, maxVel: Infinity, m: false });
+    this.camera.follow(this.player.id);
+  }
+  async wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 }
 
-function pFrames() {
-  const now = performance.now();
-  const delta = now - thenpf;
-  if (!player) return;
-  if (delta < 1000 / Math.max(Math.abs(player.xVel), Math.abs(player.yVel), 1))
-    return;
-  player.frames();
-  thenpf = now;
-}
-
-function frames() {
-  const now = performance.now();
-  const delta = now - thenf;
-  if (delta < 150) return;
-  frame++;
-  if (frame > 3) frame = 0;
-  thenf = now;
-}
-
-async function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-const init = async () => {
-  players = {};
-  map.clear();
-  if (g) cancelAnimationFrame(g);
-  update();
-
-  await connect();
-
-	const author = "JoshKeesee", project = "test";
-
-  map.loadingInfo.push(`Downloading world data for ${author}/${project}...`);
-
-  socket.emit("init", { author, project }, async (data, ws) => {
-    map.loadingInfo.pop();
-    map.loadingInfo.push(`Downloaded world data (${ws})`);
-    for (let id in data.players) players[id] = data.players[id];
-    const l = Object.keys(players).length;
-    map.loadingInfo.push(`Loaded ${l} player${l != 1 ? "s" : ""}!`);
-		stats = data.stats;
-		map.loadingInfo.push(`Loaded item and tile data!`);
-		if (data.map) {
-	    map.loadingInfo.push(
-	      `Downloaded map, loading ${
-	        data.map.w * data.map.h * Object.keys(data.map.map).length
-	      } tiles...`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-	    );
-	    map.loadMap(data.map);
-		} else {
-			map.loadingInfo.push("Failed to load map! Creating new map...");
-			map.addLayer("ground");
-			map.addLayer("scenery");
-			map.addLayer("structure");
-			await map.updateLayers();
-			await map.addScenery();
-		}
-  });
-
-  await mapLoad();
-
-  player = new Player(socket.id);
-  players[socket.id] = player;
-  socket.emit("player-join", player);
-
-  const os = camera.smoothing;
-  const r = (min, max) => Math.floor(Math.random() * (max - min)) + min;
-
-  const coords = [
-    // { x: Math.random() * map.w * map.tsize, y: Math.random() * map.h * map.tsize, z: r(0.5, 1), smoothing: 0.05, m: true },
-  ];
-
-  for (let i = 0; i < coords.length; i++) await camera.set(coords[i], 100);
-  camera.set({ z: 1, smoothing: os, maxVel: Infinity, m: false });
-  camera.follow(socket.id);
-};
-
-window.onload = init;
+const game = new Game();
+game.init();
+game.update();
 
 (() => {
-  mobile = ((a) =>
+  game.mobile = ((a) =>
     /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
       a,
     ) ||
@@ -311,17 +310,4 @@ window.onload = init;
     ))(navigator.userAgent || navigator.vendor || window.opera);
 })();
 
-export {
-  player,
-  socket,
-  players,
-  update,
-  ctx,
-  wait,
-  c,
-  touch,
-  editor,
-  frame,
-  mobile,
-	stats,
-};
+export default game;

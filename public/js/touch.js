@@ -1,5 +1,4 @@
-import { editor, ctx, mobile, c } from "./game.js";
-import { keys } from "./player.js";
+import game from "./game.js";
 
 class Touch {
   constructor(c) {
@@ -103,8 +102,8 @@ class Touch {
       } else if (k.type == "key" && !j) {
         const d = this.t.find((t) => t.key == k.key);
         k.isDown = d ? true : false;
-        if (k.isDown) keys[k.key] = true;
-        else delete keys[k.key];
+        if (k.isDown) game.keys[k.key] = true;
+        else delete game.keys[k.key];
       }
     });
   }
@@ -114,46 +113,46 @@ class Touch {
     return Math.sqrt(dx * dx + dy * dy) < r;
   }
   draw() {
-    if (!mobile || editor.toggled) return;
+    if (!game.mobile || game.editor.toggled) return;
     const m = 20;
-    this.sy = c.height - this.r - m;
+    this.sy = game.c.height - this.r - m;
 
     this.keys.forEach((k) =>
       k.type == "key" ? this.drawKey(k, m) : this.drawJoystick(k, m),
     );
   }
   drawKey(k) {
-    ctx.fillStyle = ctx.strokeStyle = "rgb(0, 0, 0)";
-    if (k.isDown) ctx.globalAlpha = 0.7;
-    else ctx.globalAlpha = 0.5;
-    ctx.beginPath();
-    ctx.arc(k.sx, this.sy, k.r, 0, Math.PI * 2, false);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(k.sx, this.sy, k.r + this.p, 0, Math.PI * 2, false);
-    ctx.stroke();
-    ctx.fillStyle = ctx.strokeStyle = "rgb(255, 255, 255)";
-    ctx.font = k.r / 2 + "px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(k.text, k.sx, this.sy);
+    game.ctx.fillStyle = game.ctx.strokeStyle = "rgb(0, 0, 0)";
+    if (k.isDown) game.ctx.globalAlpha = 0.7;
+    else game.ctx.globalAlpha = 0.5;
+    game.ctx.beginPath();
+    game.ctx.arc(k.sx, this.sy, k.r, 0, Math.PI * 2, false);
+    game.ctx.fill();
+    game.ctx.beginPath();
+    game.ctx.arc(k.sx, this.sy, k.r + this.p, 0, Math.PI * 2, false);
+    game.ctx.stroke();
+    game.ctx.fillStyle = game.ctx.strokeStyle = "rgb(255, 255, 255)";
+    game.ctx.font = k.r / 2 + "px Arial";
+    game.ctx.textAlign = "center";
+    game.ctx.textBaseline = "middle";
+    game.ctx.fillText(k.text, k.sx, this.sy);
   }
   drawJoystick(k, m) {
-    k.sx = c.width - k.r - m;
+    k.sx = game.c.width - k.r - m;
     if (!k.isDown) {
       k.x = k.sx;
       k.y = this.sy;
     }
-    if (k.isDown) ctx.globalAlpha = 0.7;
-    else ctx.globalAlpha = 0.5;
-    ctx.lineWidth = 2;
-    ctx.fillStyle = ctx.strokeStyle = "rgb(0, 0, 0)";
-    ctx.beginPath();
-    ctx.arc(k.sx, this.sy, k.r, 0, Math.PI * 2, false);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(k.sx, this.sy, k.r + this.p, 0, Math.PI * 2, false);
-    ctx.stroke();
+    if (k.isDown) game.ctx.globalAlpha = 0.7;
+    else game.ctx.globalAlpha = 0.5;
+    game.ctx.lineWidth = 2;
+    game.ctx.fillStyle = game.ctx.strokeStyle = "rgb(0, 0, 0)";
+    game.ctx.beginPath();
+    game.ctx.arc(k.sx, this.sy, k.r, 0, Math.PI * 2, false);
+    game.ctx.fill();
+    game.ctx.beginPath();
+    game.ctx.arc(k.sx, this.sy, k.r + this.p, 0, Math.PI * 2, false);
+    game.ctx.stroke();
 
     const dist = Math.hypot(k.x - k.sx, k.y - this.sy);
     let x = k.x,
@@ -169,13 +168,13 @@ class Touch {
     k.py = this.sy - y;
     k.angle = Math.atan2(y - this.sy, x - k.sx);
 
-    ctx.fillStyle = ctx.strokeStyle = "rgb(255, 255, 255)";
-    ctx.beginPath();
-    ctx.arc(x, y, k.r / 2, 0, Math.PI * 2, false);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x, y, k.r / 2 + this.p, 0, Math.PI * 2, false);
-    ctx.stroke();
+    game.ctx.fillStyle = game.ctx.strokeStyle = "rgb(255, 255, 255)";
+    game.ctx.beginPath();
+    game.ctx.arc(x, y, k.r / 2, 0, Math.PI * 2, false);
+    game.ctx.fill();
+    game.ctx.beginPath();
+    game.ctx.arc(x, y, k.r / 2 + this.p, 0, Math.PI * 2, false);
+    game.ctx.stroke();
   }
 }
 

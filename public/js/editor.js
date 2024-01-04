@@ -1,8 +1,4 @@
-import { camera } from "./camera.js";
-import { keys } from "./player.js";
-import { map } from "./map.js";
-import { ctx, player, c, socket, frame, stats } from "./game.js";
-import images from "./images.js";
+import game from "./game.js";
 
 class Editor {
   constructor(c) {
@@ -52,86 +48,86 @@ class Editor {
   toggle() {
     this.toggled = !this.toggled;
     if (this.toggled) {
-      if (document.pointerLockElement != c) c.requestPointerLock().catch(() => {});
-      camera.setZoom(0.7);
+      if (document.pointerLockElement != game.c) game.c.requestPointerLock().catch(() => {});
+      game.camera.setZoom(0.7);
     } else {
-      if (document.pointerLockElement == c) document.exitPointerLock();
-      camera.setZoom(1);
+      if (document.pointerLockElement == game.c) document.exitPointerLock();
+      game.camera.setZoom(1);
       if (this.mapChanges.length > 0)
-        socket.emit("map-update", this.mapChanges);
+        game.socket.emit("map-update", this.mapChanges);
     }
     this.click = false;
     this.clicks = 0;
     this.p = this.mapChanges = [];
   }
   setTile(l, x, y, id) {
-    map.map[l][y][x] = id;
+    game.map.map[l][y][x] = id;
     this.mapChanges.push({ l, x, y, id });
-    map.graphUpdated = false;
+    game.map.graphUpdated = false;
 		if (l != "scenery") this.setTile("scenery", x, y, -1);
   }
   run() {
     if (!this.toggled) return;
-    if (keys["escape"]) return this.toggle();
-    if (keys["w"] || keys["arrowup"]) camera.y -= 10;
-    if (keys["s"] || keys["arrowdown"]) camera.y += 10;
-    if (keys["a"] || keys["arrowleft"]) camera.x -= 10;
-    if (keys["d"] || keys["arrowright"]) camera.x += 10;
-    if (keys["p"]) {
-      delete keys["p"];
+    if (game.keys["escape"]) return this.toggle();
+    if (game.keys["w"] || game.keys["arrowup"]) game.camera.y -= 10;
+    if (game.keys["s"] || game.keys["arrowdown"]) game.camera.y += 10;
+    if (game.keys["a"] || game.keys["arrowleft"]) game.camera.x -= 10;
+    if (game.keys["d"] || game.keys["arrowright"]) game.camera.x += 10;
+    if (game.keys["p"]) {
+      delete game.keys["p"];
       this.path = !this.path;
       this.box = false;
     }
-    if (keys["o"]) {
-      delete keys["o"];
+    if (game.keys["o"]) {
+      delete game.keys["o"];
       this.box = !this.box;
       this.path = false;
     }
-    if (keys["i"]) {
-      delete keys["i"];
+    if (game.keys["i"]) {
+      delete game.keys["i"];
       this.autotiling = !this.autotiling;
     }
     this.checkSlot();
 
     const dx = Math.max(
       0,
-      Math.min(map.w - 1, Math.floor((camera.dx + c.width / 2) / map.tsize)),
+      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
     );
     const dy = Math.max(
       0,
-      Math.min(map.h - 1, Math.floor((camera.dy + c.height / 2) / map.tsize)),
+      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
     );
 
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = "black";
+    game.ctx.globalAlpha = 0.5;
+    game.ctx.fillStyle = "black";
 
     const n = {
-      img: images["tilemap"],
+      img: game.images["tilemap"],
       id: this.selected,
-      x: dx * map.tsize,
-      y: dy * map.tsize,
-      w: map.tsize,
-      h: map.tsize,
-      cut: map.tilemap,
+      x: dx * game.map.tsize,
+      y: dy * game.map.tsize,
+      w: game.map.tsize,
+      h: game.map.tsize,
+      cut: game.map.tilemap,
     };
 
-    const p = [map.graph.grid[this.pathSY][this.pathSX]].concat(this.p);
+    const p = [game.map.graph.grid[this.pathSY][this.pathSX]].concat(this.p);
 
     if (this.p.length > 0) {
       const positionsHit = [];
       p.forEach((c, i) => {
         const j = i == 0 ? i + 1 : i - 1;
         for (let k = 0; k < this.pathWidth; k++) {
-          n.x = c.y * map.tsize;
-          n.y = c.x * map.tsize;
-          if (Math.abs(p[j].x - c.x) != 0) n.x += map.tsize * k;
-          if (Math.abs(p[j].y - c.y) != 0) n.y += map.tsize * k;
+          n.x = game.c.y * game.map.tsize;
+          n.y = game.c.x * game.map.tsize;
+          if (Math.abs(p[j].x - game.c.x) != 0) n.x += game.map.tsize * k;
+          if (Math.abs(p[j].y - game.c.y) != 0) n.y += game.map.tsize * k;
           if (
             !(
               n.x < 0 ||
               n.y < 0 ||
-              n.x >= map.w * map.tsize ||
-              n.y >= map.h * map.tsize
+              n.x >= game.map.w * game.map.tsize ||
+              n.y >= game.map.h * game.map.tsize
             ) &&
             !positionsHit.includes({ x: n.x, y: n.y })
           )
@@ -139,7 +135,7 @@ class Editor {
           positionsHit.push({ x: n.x, y: n.y });
         }
       });
-    } else if (this.box && stats.boxTiles[this.selected] && this.clicks == 1) {
+    } else if (this.box && game.stats.boxTiles[this.selected] && this.clicks == 1) {
       const sx = Math.min(this.pathSX, this.pathEX);
       const sy = Math.min(this.pathSY, this.pathEY);
       const ex = Math.max(this.pathSX, this.pathEX);
@@ -147,47 +143,47 @@ class Editor {
       for (let x = sx; x <= ex; x++) {
         for (let y = sy; y <= ey; y++) {
           if (
-            stats.boxTiles[this.selected] == "on" ||
+            game.stats.boxTiles[this.selected] == "on" ||
             x == this.pathSX ||
             x == this.pathEX ||
             y == this.pathSY ||
             y == this.pathEY
           ) {
-            n.x = x * map.tsize;
-            n.y = y * map.tsize;
+            n.x = x * game.map.tsize;
+            n.y = y * game.map.tsize;
             if (
               !(
                 n.x < 0 ||
                 n.y < 0 ||
-                n.x >= map.w * map.tsize ||
-                n.y >= map.h * map.tsize
+                n.x >= game.map.w * game.map.tsize ||
+                n.y >= game.map.h * game.map.tsize
               )
             )
               this.drawImg(n);
           }
         }
       }
-    } else if (stats.structures[this.selected]) {
-      const s = stats.structures[this.selected];
-      if (s.animate) n.id += s.w * s.h * frame;
+    } else if (game.stats.structures[this.selected]) {
+      const s = game.stats.structures[this.selected];
+      if (s.animate) n.id += s.w * s.h * game.frame;
       for (let i = 0; i < s.h; i++) {
         for (let j = 0; j < s.w; j++) {
-          n.x = dx * map.tsize + j * map.tsize;
-          n.y = dy * map.tsize + i * map.tsize;
+          n.x = dx * game.map.tsize + j * game.map.tsize;
+          n.y = dy * game.map.tsize + i * game.map.tsize;
           this.drawImg(n);
           n.id++;
         }
       }
     } else {
       let a = false;
-      stats.animateTiles.includes(n.id) && (a = true);
+      game.stats.animateTiles.includes(n.id) && (a = true);
       if (n.id / 1000 >= 1) {
         n.id /= 1000;
-        n.img = images["items"];
-        n.cut = map.items;
+        n.img = game.images["items"];
+        n.cut = game.map.items;
       }
-      a && (n.id += frame);
-      if (n.id == 999) ctx.fillRect(n.x, n.y, n.w, n.h);
+      a && (n.id += game.frame);
+      if (n.id == 999) game.ctx.fillRect(n.x, n.y, n.w, n.h);
       else this.drawImg(n);
     }
 
@@ -197,19 +193,19 @@ class Editor {
     this.click = false;
     const dx = Math.max(
       0,
-      Math.min(map.w - 1, Math.floor((camera.dx + c.width / 2) / map.tsize)),
+      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
     );
     const dy = Math.max(
       0,
-      Math.min(map.h - 1, Math.floor((camera.dy + c.height / 2) / map.tsize)),
+      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
     );
-    const p = [map.graph.grid[this.pathSY][this.pathSX]].concat(this.p);
+    const p = [game.map.graph.grid[this.pathSY][this.pathSX]].concat(this.p);
     if (
-      !(this.path && stats.pathTiles[this.selected]) &&
-      !(this.box && stats.boxTiles[this.selected])
+      !(this.path && game.stats.pathTiles[this.selected]) &&
+      !(this.box && game.stats.boxTiles[this.selected])
     ) {
-      if (stats.structures[this.selected]) {
-        const s = stats.structures[this.selected];
+      if (game.stats.structures[this.selected]) {
+        const s = game.stats.structures[this.selected];
         for (let i = 0; i < s.h; i++) {
           for (let j = 0; j < s.w; j++) {
             this.checkStructure(dx + j, dy + i);
@@ -242,11 +238,11 @@ class Editor {
           const j = i == 0 ? i + 1 : i - 1;
           let x, y;
           for (let k = 0; k < this.pathWidth; k++) {
-            x = c.y;
-            y = c.x;
-            if (Math.abs(p[j].x - c.x) != 0) x += k;
-            if (Math.abs(p[j].y - c.y) != 0) y += k;
-            if (!(x < 0 || y < 0 || x >= map.w || y >= map.h)) {
+            x = game.c.y;
+            y = game.c.x;
+            if (Math.abs(p[j].x - game.c.x) != 0) x += k;
+            if (Math.abs(p[j].y - game.c.y) != 0) y += k;
+            if (!(x < 0 || y < 0 || x >= game.map.w || y >= game.map.h)) {
               const t = this.autotiling
                 ? this.getAutotile(x, y, this.selected, this.selected)
                 : this.selected;
@@ -274,7 +270,7 @@ class Editor {
         for (let x = sx; x <= ex; x++) {
           for (let y = sy; y <= ey; y++) {
             if (
-              stats.boxTiles[this.selected] == "on" ||
+              game.stats.boxTiles[this.selected] == "on" ||
               x == this.pathSX ||
               x == this.pathEX ||
               y == this.pathSY ||
@@ -295,14 +291,14 @@ class Editor {
   checkStructure(dx, dy) {
     let l = "structure";
     let n;
-    if (map.map[l][dy][dx] == -1) l = "scenery";
-    n = map.map[l][dy][dx];
-    const s = Object.keys(stats.childrenTiles).find((k) =>
-      stats.childrenTiles[k].includes(n),
+    if (game.map.map[l][dy][dx] == -1) l = "scenery";
+    n = game.map.map[l][dy][dx];
+    const s = Object.keys(game.stats.childrenTiles).find((k) =>
+      game.stats.childrenTiles[k].includes(n),
     );
     if (s) {
-      const tl = stats.structures[s];
-      const i = stats.childrenTiles[s].indexOf(n);
+      const tl = game.stats.structures[s];
+      const i = game.stats.childrenTiles[s].indexOf(n);
       const sx = dx - (i % tl.w);
       const sy = dy - Math.floor(i / tl.w);
       for (let j = 0; j < tl.h; j++) {
@@ -317,27 +313,27 @@ class Editor {
       sy = Math.floor(id / cut.width) * cut.tsize,
       sw = cut.tsize,
       sh = cut.tsize;
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    game.ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   }
   drawCenter() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.arc(c.width / 2, c.height / 2, 10, 0, Math.PI * 2);
-    ctx.fill();
+    game.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    game.ctx.arc(game.c.width / 2, game.c.height / 2, 10, 0, Math.PI * 2);
+    game.ctx.fill();
   }
   checkSlot() {
     let curr;
-    const n = Object.keys(keys).filter((k) =>
+    const n = Object.keys(game.keys).filter((k) =>
       [1, 2, 3, 4, 5, 6, 7, 8].includes(parseInt(k)),
     );
     if (n.length == 1) curr = parseInt(n[0]) - 1;
     else return;
-    delete keys[n[0]];
-    let tiles = stats.tileKey[curr];
+    delete game.keys[n[0]];
+    let tiles = game.stats.tileKey[curr];
     if (this.autotiling)
       tiles = tiles.filter(
         (e) =>
-          !Object.values(stats.autotilingSets).flat().includes(e) ||
-          stats.autotilingMap[e],
+          !Object.values(game.stats.autotilingSets).flat().includes(e) ||
+          game.stats.autotilingMap[e],
       );
     if (
       this.selected != tiles[this.tileIndex] ||
@@ -355,16 +351,16 @@ class Editor {
   }
   getAutotile(x, y, d, e) {
     const l = this.layer;
-    const curr = stats.autotilingMap[e];
+    const curr = game.stats.autotilingMap[e];
     if (!curr) return d;
-    const tiles = stats.autotilingSets[curr];
-    if (!tiles.includes(d) || x > map.w || y > map.h) return d;
+    const tiles = game.stats.autotilingSets[curr];
+    if (!tiles.includes(d) || x > game.map.w || y > game.map.h) return d;
     let str = "";
-    str += tiles.includes(map.map[l][y - 1][x]) ? curr : 0;
-    str += tiles.includes(map.map[l][y][x - 1]) ? curr : 0;
-    str += tiles.includes(map.map[l][y + 1][x]) ? curr : 0;
-    str += tiles.includes(map.map[l][y][x + 1]) ? curr : 0;
-    return stats.autotilingRecipes[str] || d;
+    str += tiles.includes(game.map.map[l][y - 1][x]) ? curr : 0;
+    str += tiles.includes(game.map.map[l][y][x - 1]) ? curr : 0;
+    str += tiles.includes(game.map.map[l][y + 1][x]) ? curr : 0;
+    str += tiles.includes(game.map.map[l][y][x + 1]) ? curr : 0;
+    return game.stats.autotilingRecipes[str] || d;
   }
   updateAutotiling(x, y, e) {
     const l = this.layer;
@@ -373,55 +369,55 @@ class Editor {
         l,
         x,
         y - 1,
-        this.getAutotile(x, y - 1, map.map[l][y - 1][x], e),
+        this.getAutotile(x, y - 1, game.map.map[l][y - 1][x], e),
       );
     if (x - 1 >= 0)
       this.setTile(
         l,
         x - 1,
         y,
-        this.getAutotile(x - 1, y, map.map[l][y][x - 1], e),
+        this.getAutotile(x - 1, y, game.map.map[l][y][x - 1], e),
       );
-    if (y + 1 < map.h)
+    if (y + 1 < game.map.h)
       this.setTile(
         l,
         x,
         y + 1,
-        this.getAutotile(x, y + 1, map.map[l][y + 1][x], e),
+        this.getAutotile(x, y + 1, game.map.map[l][y + 1][x], e),
       );
-    if (x + 1 < map.w)
+    if (x + 1 < game.map.w)
       this.setTile(
         l,
         x + 1,
         y,
-        this.getAutotile(x + 1, y, map.map[l][y][x + 1], e),
+        this.getAutotile(x + 1, y, game.map.map[l][y][x + 1], e),
       );
   }
   updateData() {
     let mt = 100,
       size = 15;
-    ctx.globalAlpha = "1.0";
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, mt - size / 2, 130, size * 11 - size / 2);
-    ctx.fillStyle = "white";
-    ctx.font = size + "px Arial";
+    game.ctx.globalAlpha = "1.0";
+    game.ctx.fillStyle = "black";
+    game.ctx.fillRect(0, mt - size / 2, 130, size * 11 - size / 2);
+    game.ctx.fillStyle = "white";
+    game.ctx.font = size + "px Arial";
     const dx = Math.max(
       0,
-      Math.min(map.w - 1, Math.floor((camera.dx + c.width / 2) / map.tsize)),
+      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
     );
     const dy = Math.max(
       0,
-      Math.min(map.h - 1, Math.floor((camera.dy + c.height / 2) / map.tsize)),
+      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
     );
-    ctx.fillText("Layer: " + this.layer, 10, mt + size * 1);
-    ctx.fillText("Selected: " + this.selected, 10, mt + size * 2);
-    ctx.fillText("X: " + dx, 10, mt + size * 3);
-    ctx.fillText("Y: " + dy, 10, mt + size * 4);
-    ctx.fillText("Click: " + player.mouse.clicked, 10, mt + size * 5);
-    ctx.fillText("Autotiling: " + this.autotiling, 10, mt + size * 6);
-    ctx.fillText("Box: " + this.box, 10, mt + size * 7);
-    ctx.fillText("Path: " + this.path, 10, mt + size * 8);
-    ctx.fillText("Path Width: " + this.pathWidth, 10, mt + size * 9);
+    game.ctx.fillText("Layer: " + this.layer, 10, mt + size * 1);
+    game.ctx.fillText("Selected: " + this.selected, 10, mt + size * 2);
+    game.ctx.fillText("X: " + dx, 10, mt + size * 3);
+    game.ctx.fillText("Y: " + dy, 10, mt + size * 4);
+    game.ctx.fillText("Click: " + game.player.mouse.clicked, 10, mt + size * 5);
+    game.ctx.fillText("Autotiling: " + this.autotiling, 10, mt + size * 6);
+    game.ctx.fillText("Box: " + this.box, 10, mt + size * 7);
+    game.ctx.fillText("Path: " + this.path, 10, mt + size * 8);
+    game.ctx.fillText("Path Width: " + this.pathWidth, 10, mt + size * 9);
   }
   updateMouse(e) {
     if (!this.toggled) return;
@@ -437,30 +433,30 @@ class Editor {
       this.touchY = e.touches[0].clientY;
     }
 
-    camera.x += x / camera.dz;
-    camera.y += y / camera.dz;
+    game.camera.x += x / game.camera.dz;
+    game.camera.y += y / game.camera.dz;
 
     const dx = Math.max(
       0,
-      Math.min(map.w - 1, Math.floor((camera.dx + c.width / 2) / map.tsize)),
+      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
     );
     const dy = Math.max(
       0,
-      Math.min(map.h - 1, Math.floor((camera.dy + c.height / 2) / map.tsize)),
+      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
     );
 
     if (!this.path) this.p = [];
 
-    if (this.path && stats.pathTiles[this.selected]) {
-      this.pathWidth = stats.pathTiles[this.selected];
+    if (this.path && game.stats.pathTiles[this.selected]) {
+      this.pathWidth = game.stats.pathTiles[this.selected];
       if (this.clicks == 1) {
         if (dx == this.pathEX && dy == this.pathEY) return;
-        if (!stats.dontCollide.includes(map.map.scenery[dy][dx])) return;
+        if (!game.stats.dontCollide.includes(game.map.map.scenery[dy][dx])) return;
         this.pathEX = dx;
         this.pathEY = dy;
-        this.p = map.pathTo(this.pathSX, this.pathSY, this.pathEX, this.pathEY);
+        this.p = game.map.pathTo(this.pathSX, this.pathSY, this.pathEX, this.pathEY);
       }
-    } else if (this.box && stats.boxTiles[this.selected]) {
+    } else if (this.box && game.stats.boxTiles[this.selected]) {
       if (this.clicks == 1) {
         if (dx == this.pathEX && dy == this.pathEY) return;
         this.pathEX = dx;

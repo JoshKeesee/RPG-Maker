@@ -1,5 +1,4 @@
-import { map } from "./map.js";
-import { players, wait, editor, c } from "./game.js";
+import game from "./game.js";
 
 class Camera {
   constructor() {
@@ -15,21 +14,21 @@ class Camera {
     this.smoothing = 0.3;
   }
   update() {
-    if (this.f && !editor.toggled && !this.s) {
-      const e = players[this.f];
+    if (this.f && !game.editor.toggled && !this.s) {
+      const e = game.players[this.f];
       if (e) {
-        this.x = e.x + e.width / 2 - c.width / 2;
-        this.y = e.y + e.height / 2 - c.height / 2;
+        this.x = e.x + e.width / 2 - game.c.width / 2;
+        this.y = e.y + e.height / 2 - game.c.height / 2;
       }
     }
 
     if (this.z == 1) {
       if (this.x < 0) this.x = 0;
       if (this.y < 0) this.y = 0;
-      if (this.x + c.width > map.w * map.tsize)
-        this.x = map.w * map.tsize - c.width;
-      if (this.y + c.height > map.h * map.tsize)
-        this.y = map.h * map.tsize - c.height;
+      if (this.x + game.c.width > game.map.w * game.map.tsize)
+        this.x = game.map.w * game.map.tsize - game.c.width;
+      if (this.y + game.c.height > game.map.h * game.map.tsize)
+        this.y = game.map.h * game.map.tsize - game.c.height;
     }
 
     this.dx += Math.min(this.maxVel, (this.x - this.dx) * this.smoothing);
@@ -58,7 +57,7 @@ class Camera {
       const c = setInterval(async () => {
         if (check() == 3) {
           clearInterval(c);
-          await wait(delay);
+          await game.wait(delay);
           resolve();
         }
       }, 10);
@@ -66,7 +65,7 @@ class Camera {
   }
   shake(amount, duration) {
     this.s = true;
-    const e = players[this.f];
+    const e = game.players[this.f];
     const startTime = performance.now();
     const shakeInterval = setInterval(() => {
       const elapsed = performance.now() - startTime;
@@ -78,11 +77,11 @@ class Camera {
         const x = e ? e.x + e.width / 2 : this.x;
         const y = e ? e.y + e.height / 2 : this.y;
 
-        this.x = x - c.width / 2 + Math.random() * amount - amount / 2;
-        this.y = y - c.height / 2 + Math.random() * amount - amount / 2;
+        this.x = x - game.c.width / 2 + Math.random() * amount - amount / 2;
+        this.y = y - game.c.height / 2 + Math.random() * amount - amount / 2;
       }
     }, 10);
   }
 }
 
-export const camera = new Camera();
+export default Camera;

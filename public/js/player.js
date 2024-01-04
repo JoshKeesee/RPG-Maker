@@ -1,10 +1,6 @@
-import { map } from "./map.js";
-import { camera } from "./camera.js";
-import { touch, editor, c, stats } from "./game.js";
+import game from "./game.js";
 
 const colors = ["#ff0000", "#0000ff", "#ffff00", "#00ff00", "#ff00ff", "#ff8000", "#8000ff", "#00ffff", "#008000", "#800000", "#000080", "#808000"];
-
-const keys = {};
 
 class Player {
   constructor(id) {
@@ -17,8 +13,8 @@ class Player {
     this.yVel = 0;
     this.speed = 4;
     this.friction = 0.7;
-    this.width = map.tsize;
-    this.height = map.tsize;
+    this.width = game.map.tsize;
+    this.height = game.map.tsize;
     this.p = 2;
     this.dir = 0;
     this.frame = 0;
@@ -33,20 +29,20 @@ class Player {
 
     let spawn = true;
     while (spawn) {
-    	this.x = Math.floor(Math.random() * map.w);
-    	this.y = Math.floor(Math.random() * map.h);
-    	if (stats.dontCollide.includes(map.map.scenery[this.y][this.x]) && stats.dontCollide.includes(map.map.structure[this.y][this.x])) spawn = false;
+    	this.x = Math.floor(Math.random() * game.map.w);
+    	this.y = Math.floor(Math.random() * game.map.h);
+    	if (game.stats.dontCollide.includes(game.map.map.scenery[this.y][this.x]) && game.stats.dontCollide.includes(game.map.map.structure[this.y][this.x])) spawn = false;
     }
 
-    this.x *= map.tsize;
-    this.y *= map.tsize;
+    this.x *= game.map.tsize;
+    this.y *= game.map.tsize;
 
-    c.addEventListener("mousemove", (e) => {
+    game.c.addEventListener("mousemove", (e) => {
       this.mouse.x = e.clientX;
       this.mouse.y = e.clientY;
     });
-    c.addEventListener("mousedown", (e) => (this.mouse.clicked = true));
-    c.addEventListener("mouseup", (e) => (this.mouse.clicked = false));
+    game.c.addEventListener("mousedown", (e) => (this.mouse.clicked = true));
+    game.c.addEventListener("mouseup", (e) => (this.mouse.clicked = false));
   }
   generateColor() {
     const l = "0123456789abcdef";
@@ -55,20 +51,20 @@ class Player {
     return h;
   }
   colliding(vx, vy) {
-    const dx = Math.floor((this.x + vx) / map.tsize);
-    const dy = Math.floor((this.y + vy) / map.tsize);
-    return !(dx >= 0 && dy >= 0 && dx < map.w && dy < map.h)
+    const dx = Math.floor((this.x + vx) / game.map.tsize);
+    const dy = Math.floor((this.y + vy) / game.map.tsize);
+    return !(dx >= 0 && dy >= 0 && dx < game.map.w && dy < game.map.h)
       ? true
-      : !stats.dontCollide.includes(map.map.structure[dy][dx]) ||
-          !stats.dontCollide.includes(map.map.scenery[dy][dx]);
+      : !game.stats.dontCollide.includes(game.map.map.structure[dy][dx]) ||
+          !game.stats.dontCollide.includes(game.map.map.scenery[dy][dx]);
   }
   handleCollision(dir) {
     const m = this[dir + "Vel"] < 0 ? 1 : 0;
-    const d = Math.floor(this[dir] / map.tsize);
+    const d = Math.floor(this[dir] / game.map.tsize);
     let col = false;
     const check = (c) => {
       if (c) {
-        this[dir] = d * map.tsize + m * map.tsize;
+        this[dir] = d * game.map.tsize + m * game.map.tsize;
         this[dir + "Vel"] = 0;
         col = true;
       }
@@ -83,29 +79,29 @@ class Player {
     if (this.frame > 3) this.frame = 0;
   }
   update() {
-    if (camera.m) return;
-    if (keys["e"]) {
-      delete keys["e"];
-      editor.toggle();
+    if (game.camera.m) return;
+    if (game.keys["e"]) {
+      delete game.keys["e"];
+      game.editor.toggle();
     }
-    if (editor.toggled) return;
-    if (keys["w"] || keys["arrowup"]) {
+    if (game.editor.toggled) return;
+    if (game.keys["w"] || game.keys["arrowup"]) {
       this.yVel -= this.speed;
       this.dir = 2;
     }
-    if (keys["a"] || keys["arrowleft"]) {
+    if (game.keys["a"] || game.keys["arrowleft"]) {
       this.xVel -= this.speed;
       this.dir = 1;
     }
-    if (keys["s"] || keys["arrowdown"]) {
+    if (game.keys["s"] || game.keys["arrowdown"]) {
       this.yVel += this.speed;
       this.dir = 0;
     }
-    if (keys["d"] || keys["arrowright"]) {
+    if (game.keys["d"] || game.keys["arrowright"]) {
       this.xVel += this.speed;
       this.dir = 3;
     }
-    const t = touch.keys.find((e) => e.type == "joystick");
+    const t = game.touch.keys.find((e) => e.type == "joystick");
     if (t?.isDown) {
       this.xVel += Math.abs(t.px / t.r) * this.speed * Math.cos(t.angle);
       this.yVel += Math.abs(t.py / t.r) * this.speed * Math.sin(t.angle);
@@ -118,36 +114,36 @@ class Player {
       if (t.py > m) this.dir = 2;
     }
     if (
-      keys["w"] ||
-      keys["arrowup"] ||
-      keys["s"] ||
-      keys["arrowdown"] ||
-      keys["a"] ||
-      keys["arrowleft"] ||
-      keys["d"] ||
-      keys["arrowright"] ||
-      touch.isDown
+      game.keys["w"] ||
+      game.keys["arrowup"] ||
+      game.keys["s"] ||
+      game.keys["arrowdown"] ||
+      game.keys["a"] ||
+      game.keys["arrowleft"] ||
+      game.keys["d"] ||
+      game.keys["arrowright"] ||
+      game.touch.isDown
     ) {
       this.path = [];
       this.curr = 0;
     }
-    if (keys["p"]) {
-      delete keys["p"];
-      camera.setZoom(camera.z == 1 ? 0.7 : 1);
+    if (game.keys["p"]) {
+      delete game.keys["p"];
+      game.camera.setZoom(game.camera.z == 1 ? 0.7 : 1);
     }
-    if (keys["shift"]) this.speed = 6;
+    if (game.keys["shift"]) this.speed = 6;
     else this.speed = 4;
     this.xVel *= this.friction;
     this.yVel *= this.friction;
 
     // if (this.mouse.clicked) {
     // 	this.mouse.clicked = false;
-    // 	const dx = Math.floor((this.mouse.x + camera.x) / map.tsize);
-    // 	const dy = Math.floor((this.mouse.y + camera.y) / map.tsize);
-    // 	if (dx >= 0 && dy >= 0 && dx < map.w && dy < map.h && stats.dontCollide.includes(map.map.scenery[dy][dx]) && stats.dontCollide.includes(map.map.structure[dy][dx])) {
-    // 		this.path = map.pathTo(Math.floor(this.x / map.tsize), Math.floor(this.y / map.tsize), dx, dy);
-    // 		this.x = Math.floor(this.x / map.tsize) * map.tsize;
-    // 		this.y = Math.floor(this.y / map.tsize) * map.tsize;
+    // 	const dx = Math.floor((this.mouse.x + game.camera.x) / game.map.tsize);
+    // 	const dy = Math.floor((this.mouse.y + game.camera.y) / game.map.tsize);
+    // 	if (dx >= 0 && dy >= 0 && dx < game.map.w && dy < game.map.h && game.stats.dontCollide.includes(game.map.map.scenery[dy][dx]) && game.stats.dontCollide.includes(game.map.map.structure[dy][dx])) {
+    // 		this.path = game.map.pathTo(Math.floor(this.x / game.map.tsize), Math.floor(this.y / game.map.tsize), dx, dy);
+    // 		this.x = Math.floor(this.x / game.map.tsize) * game.map.tsize;
+    // 		this.y = Math.floor(this.y / game.map.tsize) * game.map.tsize;
     // 	}
     // }
 
@@ -156,16 +152,16 @@ class Player {
       const dy = this.path[this.curr].x;
       this.xVel = this.yVel = 0;
       if (
-        dx == this.x.toFixed(1) / map.tsize &&
-        dy == this.y.toFixed(1) / map.tsize
+        dx == this.x.toFixed(1) / game.map.tsize &&
+        dy == this.y.toFixed(1) / game.map.tsize
       )
         this.curr++;
       if (this.curr >= this.path.length) {
         this.path = [];
         this.curr = 0;
       } else {
-        const x = this.x / map.tsize;
-        const y = this.y / map.tsize;
+        const x = this.x / game.map.tsize;
+        const y = this.y / game.map.tsize;
         const tx = this.path[this.curr].y;
         const ty = this.path[this.curr].x;
         const angle = Math.atan2(ty - y, tx - x);
@@ -187,8 +183,4 @@ class Player {
   }
 }
 
-onkeydown = (e) => (!e.repeat ? (keys[e.key.toLowerCase()] = true) : "");
-onkeyup = (e) => delete keys[e.key.toLowerCase()];
-onblur = (e) => (Object.keys(keys).forEach((k) => delete keys[k]));
-
-export { Player, keys };
+export default Player;

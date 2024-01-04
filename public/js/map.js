@@ -1,6 +1,4 @@
-import { ctx, c, frame, stats } from "./game.js";
-import { camera } from "./camera.js";
-import images from "./images.js";
+import game from "./game.js";
 import "./astar.js";
 
 class Map {
@@ -32,26 +30,26 @@ class Map {
       Math.max(
         0,
         Math.min(
-          Math.floor((v - (v2 / 2 / camera.dz - v2 / 2)) / this.tsize),
+          Math.floor((v - (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize),
           v3 - 1,
         ),
       );
     const end = (v, v2, v3) =>
       Math.min(
         v3,
-        Math.ceil((v + v2 + (v2 / 2 / camera.dz - v2 / 2)) / this.tsize),
+        Math.ceil((v + v2 + (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize),
       );
-    const sx = start(camera.dx, c.width, this.w);
-    const ex = end(camera.dx, c.width, this.w);
-    const sy = start(camera.dy, c.height, this.h);
-    const ey = end(camera.dy, c.height, this.h);
+    const sx = start(game.camera.dx, game.c.width, this.w);
+    const ex = end(game.camera.dx, game.c.width, this.w);
+    const sy = start(game.camera.dy, game.c.height, this.h);
+    const ey = end(game.camera.dy, game.c.height, this.h);
 
     for (let i = sy; i < ey; i++) {
       for (let j = sx; j < ex; j++) {
         ls.forEach((l) => {
           if (this.map[l][i][j] != -1) {
             if (this.map[l][i][j] == 999)
-              ctx.clearRect(
+              game.ctx.clearRect(
                 j * this.tsize,
                 i * this.tsize,
                 this.tsize,
@@ -60,23 +58,23 @@ class Map {
             else {
               let t = this.map[l][i][j],
                 a = false,
-                img = images["tilemap"],
+                img = game.images["tilemap"],
                 cut = this.tilemap;
-              if (stats.animateTiles.includes(t)) a = true;
+              if (game.stats.animateTiles.includes(t)) a = true;
               if (t / 1000 >= 1) {
                 t /= 1000;
-                img = images["items"];
+                img = game.images["items"];
                 cut = this.items;
               }
               const s =
-                stats.structures[
-                  Object.keys(stats.childrenTiles).find((k) =>
-                    stats.childrenTiles[k].includes(t),
+                game.stats.structures[
+                  Object.keys(game.stats.childrenTiles).find((k) =>
+                    game.stats.childrenTiles[k].includes(t),
                   )
                 ];
-              !s && a && (t += frame);
-              if (s?.animate) t += s.w * s.h * frame;
-              ctx.drawImage(
+              !s && a && (t += game.frame);
+              if (s?.animate) t += s.w * s.h * game.frame;
+              game.ctx.drawImage(
                 img,
                 (t % cut.width) * cut.tsize,
                 Math.floor(t / cut.width) * cut.tsize,
@@ -114,14 +112,14 @@ class Map {
       for (let j = 0; j < this.w; j++) {
         if (Math.random() < 0.1 && this.map.scenery[i][j] == -1) {
           this.map.scenery[i][j] =
-            stats.tileKey[3][
-              Math.floor(Math.random() * stats.tileKey[3].length)
+            game.stats.tileKey[3][
+              Math.floor(Math.random() * game.stats.tileKey[3].length)
             ];
         }
       }
     }
     const l = "scenery";
-    const t = stats.tileKey[3][1];
+    const t = game.stats.tileKey[3][1];
     for (let i = 0; i < this.w; i++) {
       this.map[l][0][i] = t;
       this.map[l][this.h - 1][i] = t;
@@ -130,7 +128,7 @@ class Map {
     }
   }
   async generateCave() {
-    const t = stats.tileKey[1][0],
+    const t = game.stats.tileKey[1][0],
       g = this.map.ground,
       s = this.map.scenery;
     for (let i = 0; i < this.h; i++) {
@@ -162,8 +160,8 @@ class Map {
       v.push([]);
       for (let j = 0; j < this.w; j++)
         v[i].push(
-          !stats.dontCollide.includes(sc[i][j]) &&
-            !stats.dontCollide.includes(st[i][j])
+          !game.stats.dontCollide.includes(sc[i][j]) &&
+            !game.stats.dontCollide.includes(st[i][j])
             ? 0
             : 1,
         );
@@ -215,4 +213,4 @@ class Map {
   }
 }
 
-export const map = new Map();
+export default Map;
