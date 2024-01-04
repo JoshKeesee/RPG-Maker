@@ -1,6 +1,6 @@
 import game from "./game.js";
 
-const colors = ["#ff0000", "#0000ff", "#ffff00", "#00ff00", "#ff00ff", "#ff8000", "#8000ff", "#00ffff", "#008000", "#800000", "#000080", "#808000"];
+const colors = ["#ff0000", "#0000ff", "#ffff00", "#ff00ff", "#ff8000", "#8000ff", "#00ffff", "#800000", "#000080"];
 
 class Player {
   constructor(id) {
