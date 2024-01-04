@@ -65,14 +65,17 @@ class Game {
         await this.connect();
         this.map.loadingInfo.pop();
         this.map.loadingInfo.push("Reconnected!");
-        init();
+        this.init();
       } else await this.connect();
     });
     this.connect = () =>
       new Promise((resolve) => {
         if (this.socket.connected) resolve();
         this.socket.connect();
-        this.socket.on("connect", () => resolve());
+        this.socket.on("connect", () => {
+          this.socket.off("connect");
+          resolve();
+        });
       });
     this.init();
     this.update();

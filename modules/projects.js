@@ -1,6 +1,7 @@
 const obj = require("./obj");
 const Map = require("./map");
 const createMap = require("./createMap");
+const parseMap = require("./parseMap");
 const stats = require("./stats");
 const fs = require("fs");
 const ext = ".world";
@@ -29,20 +30,14 @@ const projects = {
     if (fs.existsSync(p)) return;
     if (!fs.existsSync(`${f}/${author}`)) fs.mkdirSync(`${f}/${author}`);
     const m = createMap();
+    const pm = parseMap(m);
+    pm.map = await (new Map()).compress(pm.map);
     const data = {
-      map: {
-        w: m.w,
-        h: m.h,
-        tsize: m.tsize,
-        tilemap: m.tilemap,
-        items: m.items,
-        map: await (new Map()).compress(m.map),
-				l: Object.keys(m.map),
-      },
+      map: pm,
       stats,
     };
     fs.writeFileSync(p, await obj.compress(data));
-		data.map = m;
+    data.map = parseMap(m);
     return data;
   },
   async delete(author, project) {

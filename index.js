@@ -6,6 +6,7 @@ const io = require("socket.io")(server);
 
 const getSize = require("./modules/getSize");
 const createMap = require("./modules/createMap");
+const parseMap = require("./modules/parseMap");
 const Map = require("./modules/map");
 const projects = require("./modules/projects");
 
@@ -35,21 +36,14 @@ io.on("connection", (socket) => {
       .get(author, project, { players: players[author][project] })
       .then(async (d) => {
         if (!d.exists && author == user.username) d = (await projects.make(author, project)) || d;
-				if (!d.map) d.map = createMap();
+				d.map = parseMap(d.map || createMap());
 				if (!maps[author]) maps[author] = {};
 				if (!maps[author][project]) {
 					maps[author][project] = new Map();
 					maps[author][project].loadMap(d.map);
 				} else {
 					const m = maps[author][project];
-					d.map = {
-						w: m.w,
-						h: m.h,
-						tsize: m.tsize,
-						tilemap: m.tilemap,
-						items: m.items,
-						map: m.map,
-					};
+					d.map = parseMap(m);
 				}
         const ws = getSize(d);
         cb(d, ws);
