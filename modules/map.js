@@ -2,7 +2,7 @@ const { astar, Graph } = require("../public/js/astar");
 const stats = require("./stats");
 const zlib = require("zlib");
 
-class Map {
+class GameMap {
   constructor(opts = {}) {
     this.w = opts.w || 100;
     this.h = opts.h || 100;
@@ -146,7 +146,7 @@ class Map {
 		}
 		return arr;
 	}
-	async compress(map) {
+	async compress(map = this.map) {
 		let str = "";
 		const k = Object.keys(map);
 		for (let i = 0; i < k.length; i++) str += await this.compress2DArray(map[k[i]]);
@@ -163,4 +163,4 @@ class Map {
 	}
 }
 
-module.exports = Map;
+module.exports = GameMap;

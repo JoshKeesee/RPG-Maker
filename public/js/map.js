@@ -1,7 +1,7 @@
 import game from "./game.js";
 import "./astar.js";
 
-class Map {
+class GameMap {
   constructor() {
     this.loading = false;
     this.loadingMax = 200;
@@ -181,8 +181,8 @@ class Map {
   loadMap(map) {
     if (!map) return;
     this.loading = true;
-    this.w = map.w || this.w;
-    this.h = map.h || this.h;
+    this.w = map.w;
+    this.h = map.h;
     this.tsize = map.tsize || this.tsize;
     this.tilemap = map.tilemap || this.tilemap;
     this.items = map.items || this.items;
@@ -210,7 +210,8 @@ class Map {
         }
       }
     });
+    if (map.w == 0 || map.h == 0) return this.loadingProgress = this.loadingMax;
   }
 }
 
-export default Map;
+export default GameMap;

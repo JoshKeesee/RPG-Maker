@@ -89,6 +89,8 @@ class Editor {
     }
     this.checkSlot();
 
+    if (game.map.w == 0 || game.map.h == 0) return;
+
     const dx = Math.max(
       0,
       Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),

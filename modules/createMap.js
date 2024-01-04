@@ -1,7 +1,7 @@
-const Map = require("./map");
+const GameMap = require("./map");
 
 module.exports = (opts) => {
-	const map = new Map(opts);
+	const map = new GameMap(opts);
 	map.addLayer("ground");
 	map.addLayer("scenery");
 	map.addLayer("structure");

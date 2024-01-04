@@ -1,6 +1,6 @@
 import Touch from "./touch.js";
 import Editor from "./editor.js";
-import Map from "./map.js";
+import GameMap from "./map.js";
 import Camera from "./camera.js";
 import Player from "./player.js";
 import images from "./images.js";
@@ -12,7 +12,7 @@ class Game {
     this.ctx = this.c.getContext("2d");
     this.touch = new Touch(this.c);
     this.editor = new Editor(this.c);
-    this.map = new Map();
+    this.map = new GameMap();
     this.camera = new Camera();
     this.images = images;
     this.socket = io({
@@ -259,29 +259,25 @@ class Game {
   
     this.map.loadingInfo.push(`Downloading world data for ${author}/${project}...`);
   
-    this.socket.emit("init", { author, project }, async (data, ws) => {
+    this.socket.emit("load-project", { author, project }, async (data, ws, error) => {
+      if (error) return this.map.loadingInfo.push(error);
       this.map.loadingInfo.pop();
       this.map.loadingInfo.push(`Downloaded world data (${ws})`);
+      if (!data.players) data.players = {};
       for (let id in data.players) this.players[id] = data.players[id];
       const l = Object.keys(this.players).length;
       this.map.loadingInfo.push(`Loaded ${l} player${l != 1 ? "s" : ""}!`);
       this.stats = data.stats;
       this.map.loadingInfo.push(`Loaded item and tile data!`);
-      if (data.map) {
-        this.map.loadingInfo.push(
-          `Downloaded this.map, loading ${
-            data.map.w * data.map.h * Object.keys(data.map.map).length
-          } tiles...`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-        );
-        this.map.loadMap(data.map);
-      } else {
-        this.map.loadingInfo.push("Failed to load map! Creating new map...");
-        this.map.addLayer("ground");
-        this.map.addLayer("scenery");
-        this.map.addLayer("structure");
-        await this.map.updateLayers();
-        await this.map.addScenery();
+      const numTiles = Object.keys(data.map.map).reduce((a, b) => a + data.map.map[b]?.length * data.map.map[b][0]?.length, 0);
+      this.map.loadingInfo.push(
+        `Downloaded map, loading ${numTiles || 0} tiles...`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+      );
+      if (data.mapChanges) {
+        this.map.loadingInfo.push(`Loading ${data.mapChanges.length} map changes...`);
+        data.mapChanges.forEach((v) => data.map.map[v.l][v.y][v.x] = v.id);
       }
+      this.map.loadMap(data.map);
     });
   
     await this.mapLoad();

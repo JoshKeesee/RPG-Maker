@@ -22,7 +22,7 @@ class Camera {
       }
     }
 
-    if (this.z == 1) {
+    if (this.z == 1 && game.map.w * game.map.tsize > game.c.width && game.map.h * game.map.tsize > game.c.height) {
       if (this.x < 0) this.x = 0;
       if (this.y < 0) this.y = 0;
       if (this.x + game.c.width > game.map.w * game.map.tsize)

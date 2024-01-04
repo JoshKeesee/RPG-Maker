@@ -7,13 +7,15 @@ const io = require("socket.io")(server);
 const getSize = require("./modules/getSize");
 const createMap = require("./modules/createMap");
 const parseMap = require("./modules/parseMap");
-const Map = require("./modules/map");
 const projects = require("./modules/projects");
 
-projects.delete("JoshKeesee", "test");
+const gameLoop = require("./modules/gameLoop");
+
+// projects.delete("JoshKeesee", "test");
 
 const players = {};
 const maps = {};
+const updateTime = 60000 * 10;
 
 app.use(express.static("public"));
 
@@ -26,59 +28,64 @@ io.on("connection", (socket) => {
     id: socket.id,
     name: "Joshua Keesee",
     username: "JoshKeesee",
+    author: null,
+    project: null,
   };
-  let author, project;
-  socket.on("init", ({ author: au, project: pr }, cb) => {
-    author = au;
-    project = pr;
-    if (!players[author]) players[author] = { [project]: {} };
-    projects
-      .get(author, project, { players: players[author][project] })
-      .then(async (d) => {
-        if (!d.exists && author == user.username) d = (await projects.make(author, project)) || d;
-				d.map = parseMap(d.map || createMap());
-				if (!maps[author]) maps[author] = {};
-				if (!maps[author][project]) {
-					maps[author][project] = new Map();
-					maps[author][project].loadMap(d.map);
-				} else {
-					const m = maps[author][project];
-					d.map = parseMap(m);
-				}
-        const ws = getSize(d);
-        cb(d, ws);
-      });
+  socket.on("load-project", ({ author: au, project: pr }, cb) => {
+    if (!au || !pr) return cb(null, null, "Invalid author or project");
+    user.author = au;
+    user.project = pr;
+    if (!players[au]) players[au] = { [pr]: {} };
+    try {
+      projects
+        .get(au, pr, { players: players[au][pr] })
+        .then(async (d) => {
+          if (!maps[au]) maps[au] = {};
+          if (!maps[au][pr]) maps[au][pr] = [];
+          if (!d.exists) {
+            if (au == user.username) d = (await projects.make(au, pr)) || d;
+            else return cb(null, null, "Project does not exist");
+          }
+          d.map = parseMap(d.map || createMap());
+          d.mapChanges = maps[au][pr];
+          const ws = getSize(d);
+          cb(d, ws);
+        });
+      } catch (e) {
+        console.error(e);
+        cb(null, null, e.message);
+      }
   });
   socket.on("player-join", (data) => {
-		if (!players[author]) players[author] = { [project]: {} };
-    let pl = players[author][project];
-    if (!pl) pl = players[author][project] = {};
+		if (!players[user.author]) players[user.author] = { [user.project]: {} };
+    let pl = players[user.author][user.project];
+    if (!pl) pl = players[user.author][user.project] = {};
     pl[socket.id] = data;
     socket.broadcast.emit("player-join", data);
   });
   socket.on("player-move", (data) => {
     if (!data) return;
-		if (!players[author]) return;
-    const pl = players[author][project];
+		if (!players[user.author]) return;
+    const pl = players[user.author][user.project];
     const player = pl[socket.id];
     Object.keys(data).forEach((k) => (player[k] = data[k]));
     socket.broadcast.emit("player-move", data);
   });
   socket.on("map-update", (data) => {
     if (!data) return;
-		if (!maps[author]) return;
-		const map = maps[author][project];
-    data.forEach((v) => map.setTile(v.l, v.x, v.y, v.id));
+		if (!maps[user.author]) return;
+		const map = maps[user.author][user.project];
+    data.forEach((v) => map.push(v));
     socket.broadcast.emit("map-update", data);
   });
   socket.on("disconnect", () => {
-		if (!players[author]) return;
-    const pl = players[author][project];
+		if (!players[user.author]) return;
+    const pl = players[user.author][user.project];
     if (!pl) return;
     delete pl[socket.id];
 		if (!Object.keys(pl).length) {
-			delete players[author][project];
-			delete maps[author][project];
+			delete players[user.author][user.project];
+			delete maps[user.author][user.project];
 		}
     socket.broadcast.emit("player-disconnect", socket.id);
   });
@@ -86,4 +93,5 @@ io.on("connection", (socket) => {
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  gameLoop(updateTime, io, players, maps);
 });

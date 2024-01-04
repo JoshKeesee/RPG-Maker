@@ -31,7 +31,8 @@ class Player {
     while (spawn) {
     	this.x = Math.floor(Math.random() * game.map.w);
     	this.y = Math.floor(Math.random() * game.map.h);
-    	if (game.stats.dontCollide.includes(game.map.map.scenery[this.y][this.x]) && game.stats.dontCollide.includes(game.map.map.structure[this.y][this.x])) spawn = false;
+      if (typeof game.map.map.scenery[this.y] == "undefined") spawn = false;
+    	else if (game.stats.dontCollide.includes(game.map.map.scenery[this.y][this.x]) && game.stats.dontCollide.includes(game.map.map.structure[this.y][this.x])) spawn = false;
     }
 
     this.x *= game.map.tsize;
