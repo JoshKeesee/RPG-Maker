@@ -7,6 +7,7 @@ import images from "./images.js";
 
 class Game {
   constructor() {
+    this.FPS = 60;
     this.stats = {};
     this.c = document.querySelector("#game");
     this.ctx = this.c.getContext("2d");
@@ -113,7 +114,7 @@ class Game {
     this.frames();
     const now = performance.now();
     const delta = now - this.then;
-    if (delta < 1000 / 60) return;
+    if (delta < 1000 / this.FPS) return;
     this.ctx.clearRect(0, 0, this.c.width, this.c.height);
     this.c.width = window.innerWidth;
     this.c.height = window.innerHeight;
@@ -166,7 +167,6 @@ class Game {
       -this.camera.dx.toFixed(0) - this.c.width / 2,
       -this.camera.dy.toFixed(0) - this.c.height / 2,
     );
-    this.map.drawLayers(["ground", "scenery"]);
     if (this.player) {
       const prev = structuredClone(this.player);
       this.player.update();
@@ -180,70 +180,10 @@ class Game {
           ...now,
         });
     }
-    const p = Object.keys(this.players).sort((a, b) => this.players[a].y + this.players[a].height - this.players[b].y - this.players[b].height);
-    p.forEach(id => {
-      const p = this.players[id];
-      this.ctx.font = "15px sans-serif";
-      this.ctx.textAlign = "center";
-      
-      this.ctx.drawImage(
-        images[p.gender],
-        p.dir * this.character.width,
-        p.frame * this.character.height,
-        this.character.width,
-        this.character.height,
-        p.x,
-        p.y,
-        p.width,
-        p.height,
-      );
-    });
+    this.map.drawLayers(["ground", "scenery", "structure"], "scenery");
+    Object.keys(this.players).forEach(id => this.drawNametag(this.players[id]));
 
-    this.map.drawLayers(["structure"]);
-
-    p.forEach(id => {
-      const p = this.players[id];
-      const ind = Object.values(this.players).findIndex(e => e.id == p.id);
-      const n = p.name || "Player " + (ind + 1);
-      const s = 12;
-      const o = this.ctx.measureText(n).width / 2 + 5;
-      const ax = p.width / 2;
-      const ay = s;
-      const minX = this.camera.dx + o - (this.c.width / 2) / this.camera.dz + this.c.width / 2;
-      const minY = this.camera.dy + o - (this.c.height / 2) / this.camera.dz + this.c.height / 2;
-      const maxX = this.camera.dx + this.c.width - o + (this.c.width / (2 * this.camera.dz) - (this.c.width / 2));
-      const maxY = this.camera.dy + this.c.height - o + (this.c.height / (2 * this.camera.dz) - (this.c.height / 2));
-      const tx = Math.max(Math.min(p.x + ax, maxX), minX);
-      const ty = Math.max(Math.min(p.y + ay, maxY), minY);
-      const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
-      const angle = Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2;
-      if (outOfViewport) {
-        this.ctx.save();
-        this.ctx.translate(tx, ty);
-        this.ctx.rotate(angle);
-        this.ctx.translate(-tx, -ty);
-      }
-      this.ctx.beginPath();
-      this.ctx.moveTo(tx, ty);
-      this.ctx.lineTo(tx - s, ty - s);
-      this.ctx.lineTo(tx + s, ty - s);
-      this.ctx.fillStyle = p.color;
-      this.ctx.fill();
-      this.ctx.closePath();
-      if (angle > Math.PI / 2 && outOfViewport) {
-        this.ctx.translate(tx, ty);
-        this.ctx.rotate(Math.PI);
-        this.ctx.translate(-tx, -ty);
-        this.ctx.translate(0, s * 4 - 5);
-      }
-      this.ctx.fillStyle = "#fff";
-      this.ctx.textAlign = "center";
-      this.ctx.font = "bold 15px sans-serif";
-      this.ctx.fillText(n, tx, ty - s - 5);
-      if (outOfViewport) this.ctx.restore();
-    });
-
-    this.then = now;
+    this.then = now - (delta % (1000 / this.FPS));
     this.editor.run();
     this.ctx.restore();
     if (this.editor.toggled) {
@@ -252,9 +192,11 @@ class Game {
     }
     this.touch.draw();
   
-    this.ctx.globalAlpha = this.loadingOpacity;
-    this.ctx.fillStyle = "#000";
-    this.ctx.fillRect(0, 0, this.c.width, this.c.height);
+    if (this.loadingOpacity.toFixed(1) > 0) {
+      this.ctx.globalAlpha = this.loadingOpacity;
+      this.ctx.fillStyle = "#000";
+      this.ctx.fillRect(0, 0, this.c.width, this.c.height);
+    }
   }
   async init() {
     this.players = {};
@@ -305,6 +247,62 @@ class Game {
   }
   async wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  drawPlayer(p) {
+    this.ctx.font = "15px sans-serif";
+    this.ctx.textAlign = "center";
+    
+    this.ctx.drawImage(
+      images[p.gender],
+      p.dir * this.character.width,
+      p.frame * this.character.height,
+      this.character.width,
+      this.character.height,
+      p.x,
+      p.y,
+      p.width,
+      p.height,
+    );
+  }
+  drawNametag(p) {
+    const ind = Object.values(this.players).findIndex(e => e.id == p.id);
+    const n = p.name || "Player " + (ind + 1);
+    const s = 12;
+    const o = this.ctx.measureText(n).width / 2 + 5;
+    const ax = p.width / 2;
+    const ay = s;
+    const minX = this.camera.dx + o - (this.c.width / 2) / this.camera.dz + this.c.width / 2;
+    const minY = this.camera.dy + o - (this.c.height / 2) / this.camera.dz + this.c.height / 2;
+    const maxX = this.camera.dx + this.c.width - o + (this.c.width / (2 * this.camera.dz) - (this.c.width / 2));
+    const maxY = this.camera.dy + this.c.height - o + (this.c.height / (2 * this.camera.dz) - (this.c.height / 2));
+    const tx = Math.max(Math.min(p.x + ax, maxX), minX);
+    const ty = Math.max(Math.min(p.y + ay, maxY), minY);
+    const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
+    const angle = Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2;
+    if (outOfViewport) {
+      this.ctx.save();
+      this.ctx.translate(tx, ty);
+      this.ctx.rotate(angle);
+      this.ctx.translate(-tx, -ty);
+    }
+    this.ctx.beginPath();
+    this.ctx.moveTo(tx, ty);
+    this.ctx.lineTo(tx - s, ty - s);
+    this.ctx.lineTo(tx + s, ty - s);
+    this.ctx.fillStyle = p.color;
+    this.ctx.fill();
+    this.ctx.closePath();
+    if (angle > Math.PI / 2 && outOfViewport) {
+      this.ctx.translate(tx, ty);
+      this.ctx.rotate(Math.PI);
+      this.ctx.translate(-tx, -ty);
+      this.ctx.translate(0, s * 4 - 5);
+    }
+    this.ctx.fillStyle = "#fff";
+    this.ctx.textAlign = "center";
+    this.ctx.font = "bold 15px sans-serif";
+    this.ctx.fillText(n, tx, ty - s - 5);
+    if (outOfViewport) this.ctx.restore();
   }
 }
 

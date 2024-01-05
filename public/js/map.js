@@ -24,7 +24,7 @@ class GameMap {
       tsize: 80,
     };
   }
-  drawLayers(ls) {
+  drawLayers(ls, s) {
     if (!Object.keys(this.map).length) return;
     const start = (v, v2, v3) =>
       Math.max(
@@ -44,9 +44,20 @@ class GameMap {
     const sy = start(game.camera.dy, game.c.height, this.h);
     const ey = end(game.camera.dy, game.c.height, this.h);
 
-    for (let i = sy; i < ey; i++) {
-      for (let j = sx; j < ex; j++) {
-        ls.forEach((l) => {
+    const playersDrawn = [];
+
+    ls.forEach((l) => {
+      for (let i = sy; i < ey; i++) {
+        for (let j = sx; j < ex; j++) {
+          const dp = Object.keys(game.players).find((k) => {
+            const p = game.players[k];
+            return (
+              Math.floor(p.x / this.tsize) == j &&
+              Math.floor((p.y + p.height) / this.tsize) == i &&
+              !playersDrawn.includes(k)
+            );
+          });
+          if (dp && l == s) game.drawPlayer(game.players[dp]);
           if (this.map[l][i][j] != -1) {
             if (this.map[l][i][j] == 999)
               game.ctx.clearRect(
@@ -87,9 +98,9 @@ class GameMap {
               );
             }
           }
-        });
+        }
       }
-    }
+    });
   }
   addLayer(l) {
     this.map[l] = [];
