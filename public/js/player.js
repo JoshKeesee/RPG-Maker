@@ -11,7 +11,8 @@ class Player {
     this.curr = 0;
     this.xVel = 0;
     this.yVel = 0;
-    this.speed = 4;
+    this.minSpeed = 3;
+    this.speed = this.minSpeed;
     this.friction = 0.7;
     this.width = game.map.tsize;
     this.height = game.map.tsize;
@@ -134,8 +135,8 @@ class Player {
       delete game.keys["p"];
       game.camera.setZoom(game.camera.z == 1 ? 0.7 : 1);
     }
-    if (game.keys["shift"]) this.speed = 6;
-    else this.speed = 4;
+    if (game.keys["shift"]) this.speed = this.minSpeed * 1.5;
+    else this.speed = this.minSpeed;
     this.xVel *= this.friction;
     this.yVel *= this.friction;
 

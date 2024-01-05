@@ -180,7 +180,8 @@ class Game {
           ...now,
         });
     }
-    this.map.drawLayers(["ground", "scenery", "structure"], "scenery");
+    const l = Object.keys(this.map.map);
+    this.map.drawLayers(l, l[1]);
     Object.keys(this.players).forEach(id => this.drawNametag(this.players[id]));
 
     this.then = now - (delta % (1000 / this.FPS));
