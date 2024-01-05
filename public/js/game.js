@@ -237,6 +237,8 @@ class Game {
         this.ctx.translate(0, s * 4 - 5);
       }
       this.ctx.fillStyle = "#fff";
+      this.ctx.textAlign = "center";
+      this.ctx.font = "bold 15px sans-serif";
       this.ctx.fillText(n, tx, ty - s - 5);
       if (outOfViewport) this.ctx.restore();
     });

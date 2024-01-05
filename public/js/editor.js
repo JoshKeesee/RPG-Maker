@@ -120,10 +120,10 @@ class Editor {
       p.forEach((c, i) => {
         const j = i == 0 ? i + 1 : i - 1;
         for (let k = 0; k < this.pathWidth; k++) {
-          n.x = game.c.y * game.map.tsize;
-          n.y = game.c.x * game.map.tsize;
-          if (Math.abs(p[j].x - game.c.x) != 0) n.x += game.map.tsize * k;
-          if (Math.abs(p[j].y - game.c.y) != 0) n.y += game.map.tsize * k;
+          n.x = c.y * game.map.tsize;
+          n.y = c.x * game.map.tsize;
+          if (Math.abs(p[j].x - c.x) != 0) n.x += game.map.tsize * k;
+          if (Math.abs(p[j].y - c.y) != 0) n.y += game.map.tsize * k;
           if (
             !(
               n.x < 0 ||
@@ -240,10 +240,10 @@ class Editor {
           const j = i == 0 ? i + 1 : i - 1;
           let x, y;
           for (let k = 0; k < this.pathWidth; k++) {
-            x = game.c.y;
-            y = game.c.x;
-            if (Math.abs(p[j].x - game.c.x) != 0) x += k;
-            if (Math.abs(p[j].y - game.c.y) != 0) y += k;
+            x = c.y;
+            y = c.x;
+            if (Math.abs(p[j].x - c.x) != 0) x += k;
+            if (Math.abs(p[j].y - c.y) != 0) y += k;
             if (!(x < 0 || y < 0 || x >= game.map.w || y >= game.map.h)) {
               const t = this.autotiling
                 ? this.getAutotile(x, y, this.selected, this.selected)
