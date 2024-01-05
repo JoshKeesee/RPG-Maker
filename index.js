@@ -15,7 +15,24 @@ const gameLoop = require("./modules/gameLoop");
 
 const players = {};
 const maps = {};
+const playerSaves = {};
 const updateTime = 60000 * 10;
+
+const updateGameData = () => {
+  const ap = projects.getAllProjects();
+  Object.keys(ap).forEach((author) => {
+    if (!maps[author]) maps[author] = {};
+    if (!playerSaves[author]) playerSaves[author] = {};
+    if (!players[author]) players[author] = {};
+    ap[author].forEach((project) => {
+      if (!maps[author][project]) maps[author][project] = [];
+      if (!playerSaves[author][project]) playerSaves[author][project] = {};
+      if (!players[author][project]) players[author][project] = {};
+    });
+  });
+};
+
+updateGameData();
 
 app.use(express.static("public"));
 
@@ -35,17 +52,17 @@ io.on("connection", (socket) => {
     if (!au || !pr) return cb(null, null, "Invalid author or project");
     user.author = au;
     user.project = pr;
-    if (!players[au]) players[au] = { [pr]: {} };
+    const extras = { playerSaves: playerSaves[au] ? playerSaves[au][pr] || {} : {} };
     try {
       projects
-        .get(au, pr, { players: players[au][pr] })
+        .get(au, pr)
         .then(async (d) => {
-          if (!maps[au]) maps[au] = {};
-          if (!maps[au][pr]) maps[au][pr] = [];
           if (!d.exists) {
-            if (au == user.username) d = (await projects.make(au, pr)) || d;
+            if (au == user.username) d = (await projects.make(au, pr, extras)) || d;
             else return cb(null, null, "Project does not exist");
+            playerSaves[au][pr] = d.playerSaves || {};
           }
+          updateGameData();
           d.map = parseMap(d.map || createMap());
           d.mapChanges = maps[au][pr];
           const ws = getSize(d);
@@ -56,16 +73,21 @@ io.on("connection", (socket) => {
         cb(null, null, e.message);
       }
   });
-  socket.on("player-join", (data) => {
-		if (!players[user.author]) players[user.author] = { [user.project]: {} };
-    let pl = players[user.author][user.project];
-    if (!pl) pl = players[user.author][user.project] = {};
+  socket.on("player-join", (data, cb = () => {}) => {
+    if (!data) return cb(null);
+    updateGameData();
+    const pl = players[user.author][user.project];
+    const s = playerSaves[user.author][user.project];
+    if (s[user.username]) data = s[user.username];
+    else if (user.username) s[user.username] = data;
+    data.id = socket.id;
+    data.name = user.name;
     pl[socket.id] = data;
+    cb(pl[socket.id]);
     socket.broadcast.emit("player-join", data);
   });
   socket.on("player-move", (data) => {
     if (!data) return;
-		if (!players[user.author]) return;
     const pl = players[user.author][user.project];
     const player = pl[socket.id];
     Object.keys(data).forEach((k) => (player[k] = data[k]));
@@ -73,25 +95,20 @@ io.on("connection", (socket) => {
   });
   socket.on("map-update", (data) => {
     if (!data) return;
-		if (!maps[user.author]) return;
 		const map = maps[user.author][user.project];
     data.forEach((v) => map.push(v));
     socket.broadcast.emit("map-update", data);
   });
   socket.on("disconnect", () => {
-		if (!players[user.author]) return;
+    updateGameData();
     const pl = players[user.author][user.project];
-    if (!pl) return;
+    if (user.username) playerSaves[user.author][user.project][user.username] = structuredClone(pl[socket.id]);
     delete pl[socket.id];
-		if (!Object.keys(pl).length) {
-			delete players[user.author][user.project];
-			delete maps[user.author][user.project];
-		}
     socket.broadcast.emit("player-disconnect", socket.id);
   });
 });
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  gameLoop(updateTime, io, players, maps);
+  gameLoop(updateTime, io, playerSaves, maps);
 });

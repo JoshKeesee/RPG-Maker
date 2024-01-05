@@ -180,11 +180,9 @@ class Game {
           ...now,
         });
     }
-    const p = Object.keys(this.players).sort((a, b) => this.players[a].y - this.players[b].y);
+    const p = Object.keys(this.players).sort((a, b) => this.players[a].y + this.players[a].height - this.players[b].y - this.players[b].height);
     p.forEach(id => {
       const p = this.players[id];
-      const ind = Object.values(this.players).findIndex(e => e.id == p.id);
-      const n = p.name || "Player " + (ind + 1);
       this.ctx.font = "15px sans-serif";
       this.ctx.textAlign = "center";
       
@@ -199,7 +197,14 @@ class Game {
         p.width,
         p.height,
       );
-  
+    });
+
+    this.map.drawLayers(["structure"]);
+
+    p.forEach(id => {
+      const p = this.players[id];
+      const ind = Object.values(this.players).findIndex(e => e.id == p.id);
+      const n = p.name || "Player " + (ind + 1);
       const s = 12;
       const o = this.ctx.measureText(n).width / 2 + 5;
       const ax = p.width / 2;
@@ -235,7 +240,7 @@ class Game {
       this.ctx.fillText(n, tx, ty - s - 5);
       if (outOfViewport) this.ctx.restore();
     });
-    this.map.drawLayers(["structure"]);
+
     this.then = now;
     this.editor.run();
     this.ctx.restore();
@@ -282,20 +287,19 @@ class Game {
   
     await this.mapLoad();
   
-    this.player = new Player(this.socket.id);
-    this.players[this.socket.id] = this.player;
-    this.socket.emit("player-join", this.player);
-  
-    const os = this.camera.smoothing;
-    const r = (min, max) => Math.floor(Math.random() * (max - min)) + min;
-  
-    const coords = [
-      // { x: Math.random() * this.map.w * this.map.tsize, y: Math.random() * this.map.h * this.map.tsize, z: r(0.5, 1), smoothing: 0.05, m: true },
-    ];
-  
-    for (let i = 0; i < coords.length; i++) await this.camera.set(coords[i], 100);
-    this.camera.set({ z: 1, smoothing: os, maxVel: Infinity, m: false });
-    this.camera.follow(this.player.id);
+    this.socket.emit("player-join", new Player(this.socket.id), async (data) => {
+      this.players[this.socket.id] = this.player = new Player(this.socket.id, data);
+      const os = this.camera.smoothing;
+      const r = (min, max) => Math.floor(Math.random() * (max - min)) + min;
+    
+      const coords = [
+        // { x: Math.random() * this.map.w * this.map.tsize, y: Math.random() * this.map.h * this.map.tsize, z: r(0.5, 1), smoothing: 0.05, m: true },
+      ];
+    
+      for (let i = 0; i < coords.length; i++) await this.camera.set(coords[i], 100);
+      this.camera.set({ z: 1, smoothing: os, maxVel: Infinity, m: false });
+      this.camera.follow(this.player.id);
+    });
   }
   async wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));

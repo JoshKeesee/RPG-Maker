@@ -38,7 +38,7 @@ const projects = {
 		data.map.map = await (new GameMap()).decompress(data.map.map, data.map.w, data.map.h, data.map.l);
     return data;
   },
-  async make(author, project) {
+  async make(author, project, extras = {}) {
     console.log(`Making project ${author}/${project}`);
     const p = `${f}/${author}/${project}${ext}`;
     if (fs.existsSync(p)) return;
@@ -49,7 +49,9 @@ const projects = {
     const data = {
       map: pm,
       stats,
+      ...extras,
     };
+    console.log(data);
     fs.writeFileSync(p, await obj.compress(data));
     data.map = parseMap(m);
     return data;

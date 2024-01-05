@@ -3,7 +3,7 @@ import game from "./game.js";
 const colors = ["#ff0000", "#0000ff", "#ffff00", "#ff00ff", "#ff8000", "#8000ff", "#00ffff", "#800000", "#000080"];
 
 class Player {
-  constructor(id) {
+  constructor(id, extra = {}) {
     this.id = id;
     this.x = 0;
     this.y = 0;
@@ -44,6 +44,8 @@ class Player {
     });
     game.c.addEventListener("mousedown", (e) => (this.mouse.clicked = true));
     game.c.addEventListener("mouseup", (e) => (this.mouse.clicked = false));
+
+    Object.keys(extra).forEach((k) => this[k] = extra[k]);
   }
   generateColor() {
     const l = "0123456789abcdef";
