@@ -421,7 +421,7 @@ class Editor {
     game.ctx.fillText("Path: " + this.path, 10, mt + size * 8);
     game.ctx.fillText("Path Width: " + this.pathWidth, 10, mt + size * 9);
   }
-  updateMouse(e) {
+  async updateMouse(e) {
     if (!this.toggled) return;
     e.preventDefault();
     if (!e.touches && !(e.movementX || e.movementY)) return;
@@ -456,7 +456,7 @@ class Editor {
         if (!game.stats.dontCollide.includes(game.map.map.scenery[dy][dx])) return;
         this.pathEX = dx;
         this.pathEY = dy;
-        this.p = game.map.pathTo(this.pathSX, this.pathSY, this.pathEX, this.pathEY);
+        this.p = await game.map.pathTo(this.pathSX, this.pathSY, this.pathEX, this.pathEY);
       }
     } else if (this.box && game.stats.boxTiles[this.selected]) {
       if (this.clicks == 1) {

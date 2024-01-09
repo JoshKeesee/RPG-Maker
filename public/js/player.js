@@ -145,7 +145,7 @@ class Player {
     // 	const dx = Math.floor((this.mouse.x + game.camera.x) / game.map.tsize);
     // 	const dy = Math.floor((this.mouse.y + game.camera.y) / game.map.tsize);
     // 	if (dx >= 0 && dy >= 0 && dx < game.map.w && dy < game.map.h && game.stats.dontCollide.includes(game.map.map.scenery[dy][dx]) && game.stats.dontCollide.includes(game.map.map.structure[dy][dx])) {
-    // 		this.path = game.map.pathTo(Math.floor(this.x / game.map.tsize), Math.floor(this.y / game.map.tsize), dx, dy);
+    // 		this.path = await game.map.pathTo(Math.floor(this.x / game.map.tsize), Math.floor(this.y / game.map.tsize), dx, dy);
     // 		this.x = Math.floor(this.x / game.map.tsize) * game.map.tsize;
     // 		this.y = Math.floor(this.y / game.map.tsize) * game.map.tsize;
     // 	}

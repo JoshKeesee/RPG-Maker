@@ -30,14 +30,14 @@ class GameMap {
       Math.max(
         0,
         Math.min(
-          Math.floor((v - (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize),
+          Math.floor((v - (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize) - 1,
           v3 - 1,
         ),
       );
     const end = (v, v2, v3) =>
       Math.min(
         v3,
-        Math.ceil((v + v2 + (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize),
+        Math.ceil((v + v2 + (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize) + 1,
       );
     const sx = start(game.camera.dx, game.c.width, this.w);
     const ex = end(game.camera.dx, game.c.width, this.w);
@@ -180,8 +180,8 @@ class GameMap {
     this.graph = new Graph(v);
     this.graphUpdated = true;
   }
-  pathTo(x1, y1, x2, y2, opts = { diagonal: false }) {
-    if (!this.graphUpdated) this.updateGraph();
+  async pathTo(x1, y1, x2, y2, opts = { diagonal: false }) {
+    if (!this.graphUpdated) await this.updateGraph();
     const start = this.graph.grid[y1][x1];
     const end = this.graph.grid[y2][x2];
     this.graph.diagonal = opts.diagonal;

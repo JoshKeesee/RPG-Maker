@@ -3,13 +3,15 @@ const app = express();
 const port = 3000;
 const server = require("http").createServer(app);
 const io = require("socket.io")(server);
+const readline = require("readline");
 
 const getSize = require("./modules/getSize");
 const createMap = require("./modules/createMap");
 const parseMap = require("./modules/parseMap");
 const projects = require("./modules/projects");
 
-const gameLoop = require("./modules/gameLoop");
+const game = require("./modules/game");
+const { exit } = require("process");
 
 // projects.delete("JoshKeesee", "test");
 
@@ -60,8 +62,8 @@ io.on("connection", (socket) => {
           if (!d.exists) {
             if (au == user.username) d = (await projects.make(au, pr, extras)) || d;
             else return cb(null, null, "Project does not exist");
-            playerSaves[au][pr] = d.playerSaves || {};
           }
+          playerSaves[au][pr] = d.playerSaves || {};
           updateGameData();
           d.map = parseMap(d.map || createMap());
           d.mapChanges = maps[au][pr];
@@ -82,6 +84,7 @@ io.on("connection", (socket) => {
     else if (user.username) s[user.username] = data;
     data.id = socket.id;
     data.name = user.name;
+    data.user = user;
     pl[socket.id] = data;
     cb(pl[socket.id]);
     socket.broadcast.emit("player-join", data);
@@ -110,5 +113,40 @@ io.on("connection", (socket) => {
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  gameLoop(updateTime, io, playerSaves, maps);
+  game.loop(updateTime, io, playerSaves, maps);
 });
+
+let exitRuns = 0;
+
+const saveBeforeExit = (code) => {
+  exitRuns++;
+  if (exitRuns > 1) return;
+  updateGameData();
+  Object.keys(players).forEach(id => {
+    const p = players[id];
+    if (p.user?.username) playerSaves[p.user.author][p.user.project][p.user.username] = structuredClone(p);
+  });
+  game.save(playerSaves, maps).then(() => {
+    const closeCodes = [0, "SIGINT", "SIGUSR1", "SIGUSR2"];
+    
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    if (closeCodes.includes(code)) {
+      rl.question("Are you sure you want to close the server? (y/n): ", a => {
+        if (a.toLowerCase() == "n" || a.toLowerCase() == "no") rl.close();
+        else process.exit();
+      });
+    }
+
+    exitRuns = 0;
+  });
+};
+
+process.on("beforeExit", saveBeforeExit);
+process.on("SIGINT", saveBeforeExit);
+process.on("SIGUSR1", saveBeforeExit);
+process.on("SIGUSR2", saveBeforeExit);
+process.on("uncaughtException", saveBeforeExit);

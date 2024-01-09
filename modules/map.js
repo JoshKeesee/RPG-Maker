@@ -99,8 +99,8 @@ class GameMap {
     this.graph = new Graph(v);
     this.graphUpdated = true;
   }
-  pathTo(x1, y1, x2, y2, opts = { diagonal: false }) {
-    if (!this.graphUpdated) this.updateGraph();
+  async pathTo(x1, y1, x2, y2, opts = { diagonal: false }) {
+    if (!this.graphUpdated) await this.updateGraph();
     const start = this.graph.grid[y1][x1];
     const end = this.graph.grid[y2][x2];
     this.graph.diagonal = opts.diagonal;

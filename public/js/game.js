@@ -266,6 +266,8 @@ class Game {
     );
   }
   drawNametag(p) {
+    this.ctx.textAlign = "center";
+    this.ctx.font = "bold 15px sans-serif";
     const ind = Object.values(this.players).findIndex(e => e.id == p.id);
     const n = p.name || "Player " + (ind + 1);
     const s = 12;
@@ -300,8 +302,6 @@ class Game {
       this.ctx.translate(0, s * 4 - 5);
     }
     this.ctx.fillStyle = "#fff";
-    this.ctx.textAlign = "center";
-    this.ctx.font = "bold 15px sans-serif";
     this.ctx.fillText(n, tx, ty - s - 5);
     if (outOfViewport) this.ctx.restore();
   }
