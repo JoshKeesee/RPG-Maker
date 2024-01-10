@@ -80,6 +80,8 @@ class Game {
       });
     this.init();
     this.update();
+
+    window.addEventListener("beforeunload", () => this.g ? cancelAnimationFrame(this.g) : "");
   }
   mapLoad() {
     return new Promise((resolve) => {
