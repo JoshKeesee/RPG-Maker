@@ -60,6 +60,7 @@ const projects = {
     const p = `${f}/${author}/${project}${ext}`;
     if (!fs.existsSync(p)) return;
     fs.unlinkSync(p);
+    return new Promise((resolve) => resolve());
   },
   async save(author, project, data) {
     const p = `${f}/${author}/${project}${ext}`;
@@ -74,6 +75,7 @@ const projects = {
     });
     d.map.map = await pm.compress();
     fs.writeFileSync(p, await obj.compress(d));
+    return new Promise((resolve) => resolve());
   }
 };
 

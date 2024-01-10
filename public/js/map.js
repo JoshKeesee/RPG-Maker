@@ -96,11 +96,29 @@ class GameMap {
                 this.tsize,
                 this.tsize,
               );
+              if (l == "structure") this.drawShadow(j * this.tsize, i * this.tsize, t);
             }
           }
         }
       }
     });
+  }
+  drawShadow(x, y, id) {
+    game.ctx.save();
+    game.ctx.
+    game.ctx.globalAlpha = 0.6;
+    game.ctx.drawImage(
+      game.images["tilemap"],
+      (id % this.tilemap.width) * this.tilemap.tsize,
+      Math.floor(id / this.tilemap.width) * this.tilemap.tsize,
+      this.tilemap.tsize,
+      this.tilemap.tsize,
+      x,
+      y,
+      this.tsize,
+      this.tsize,
+    );
+    game.ctx.restore();
   }
   addLayer(l) {
     this.map[l] = [];

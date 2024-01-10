@@ -62,8 +62,7 @@ io.on("connection", (socket) => {
           if (!d.exists) {
             if (au == user.username) d = (await projects.make(au, pr, extras)) || d;
             else return cb(null, null, "Project does not exist");
-          }
-          playerSaves[au][pr] = d.playerSaves || {};
+          } else if (Object.keys(playerSaves[au][pr]).length == 0) playerSaves[au][pr] = d.playerSaves || {};
           updateGameData();
           d.map = parseMap(d.map || createMap());
           d.mapChanges = maps[au][pr];
@@ -92,8 +91,7 @@ io.on("connection", (socket) => {
   socket.on("player-move", (data) => {
     if (!data) return;
     const pl = players[user.author][user.project];
-    const player = pl[socket.id];
-    Object.keys(data).forEach((k) => (player[k] = data[k]));
+    Object.keys(data).forEach((k) => (pl[socket.id][k] = data[k]));
     socket.broadcast.emit("player-move", data);
   });
   socket.on("map-update", (data) => {
