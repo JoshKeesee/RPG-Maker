@@ -85,6 +85,7 @@ class GameMap {
                 ];
               !s && a && (t += game.frame);
               if (s?.animate) t += s.w * s.h * game.frame;
+              if (l != "ground") this.drawShadow(j, i, t);
               game.ctx.drawImage(
                 img,
                 (t % cut.width) * cut.tsize,
@@ -96,7 +97,6 @@ class GameMap {
                 this.tsize,
                 this.tsize,
               );
-              if (l == "structure") this.drawShadow(j * this.tsize, i * this.tsize, t);
             }
           }
         }
@@ -105,16 +105,19 @@ class GameMap {
   }
   drawShadow(x, y, id) {
     game.ctx.save();
-    game.ctx.
-    game.ctx.globalAlpha = 0.6;
+    const a = 0.5;
+    game.ctx.transform(1, 0, -a, 1, this.tsize * (y + 1) * a, 0);
+    game.ctx.filter = "blur(2px)";
+    game.ctx.globalCompositeOperation = "multiply";
+    game.ctx.globalAlpha = 0.7;
     game.ctx.drawImage(
       game.images["tilemap"],
       (id % this.tilemap.width) * this.tilemap.tsize,
       Math.floor(id / this.tilemap.width) * this.tilemap.tsize,
       this.tilemap.tsize,
       this.tilemap.tsize,
-      x,
-      y,
+      x * this.tsize,
+      y * this.tsize,
       this.tsize,
       this.tsize,
     );
