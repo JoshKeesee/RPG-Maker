@@ -51,7 +51,6 @@ const projects = {
       stats,
       ...extras,
     };
-    console.log(data);
     fs.writeFileSync(p, await obj.compress(data));
     data.map = parseMap(m);
     return data;

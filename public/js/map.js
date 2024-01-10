@@ -47,6 +47,7 @@ class GameMap {
     const playersDrawn = [];
 
     ls.forEach((l) => {
+      if (l == "structure") this.drawShadows(sx, sy, ex, ey, l);
       for (let i = sy; i < ey; i++) {
         for (let j = sx; j < ex; j++) {
           const dp = Object.keys(game.players).find((k) => {
@@ -85,7 +86,6 @@ class GameMap {
                 ];
               !s && a && (t += game.frame);
               if (s?.animate) t += s.w * s.h * game.frame;
-              if (l != "ground") this.drawShadow(j, i, t);
               game.ctx.drawImage(
                 img,
                 (t % cut.width) * cut.tsize,
@@ -103,13 +103,46 @@ class GameMap {
       }
     });
   }
-  drawShadow(x, y, id) {
-    game.ctx.save();
+  drawShadows(sx, sy, ex, ey, l) {
+    const coords = [];
+    for (let i = sy; i < ey; i++) {
+      for (let j = sx; j < ex; j++) {
+        if (this.map[l][i][j] > -1) coords.push([j, i, this.map[l][i][j]]);
+      }
+    }
+    let ly = -1;
     const a = 0.5;
-    game.ctx.transform(1, 0, -a, 1, this.tsize * (y + 1) * a, 0);
-    game.ctx.filter = "blur(2px)";
-    game.ctx.globalCompositeOperation = "multiply";
-    game.ctx.globalAlpha = 0.7;
+    const setupShadow = (y, i) => {
+      game.ctx.save();
+      // game.ctx.filter = "blur(2px)";
+      game.ctx.globalCompositeOperation = "multiply";
+      game.ctx.globalAlpha = 1;
+      game.ctx.transform(1, 0, -a, 1, (this.tsize * (y + 1) + i * this.tsize) * a, 0);
+      ly = y;
+    };
+    setupShadow(ly);
+    coords.forEach((c) => {
+      const [x, y, t] = c;
+      if (y > ly) {
+        game.ctx.restore();
+        let i = 0;
+        const ct = game.stats.childrenTiles, s = game.stats.structures;
+        if (l == "structure") Object.keys(ct).every((k) => {
+          if (ct[k].includes(t)) {
+            console.log(ct[k].indexOf(t) / s[k].w)
+            i = s[k].h - 1 - ct[k].indexOf(t) / s[k].w;
+            // console.log(i);
+            return false;
+          }
+          return true;
+        });
+        setupShadow(y, i);
+      }
+      this.drawShadow(x, y, t);
+    });
+    game.ctx.restore();
+  }
+  drawShadow(x, y, id) {
     game.ctx.drawImage(
       game.images["tilemap"],
       (id % this.tilemap.width) * this.tilemap.tsize,
@@ -121,7 +154,6 @@ class GameMap {
       this.tsize,
       this.tsize,
     );
-    game.ctx.restore();
   }
   addLayer(l) {
     this.map[l] = [];
