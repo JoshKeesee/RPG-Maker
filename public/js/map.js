@@ -130,7 +130,7 @@ class GameMap {
         if (l == "structure") Object.keys(ct).every((k) => {
           if (ct[k].includes(t)) {
             console.log(ct[k].indexOf(t) / s[k].w)
-            i = s[k].h - 1 - ct[k].indexOf(t) / s[k].w;
+            i = s[k].h - 1 - Math.floor(ct[k].indexOf(t) / s[k].w);
             // console.log(i);
             return false;
           }
