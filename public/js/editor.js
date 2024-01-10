@@ -38,7 +38,7 @@ class Editor {
     c.addEventListener("touchend", (e) => {
       const x = Math.floor(e.changedTouches[0].clientX) || 0;
       const y = Math.floor(e.changedTouches[0].clientY) || 0;
-      if (Math.abs(x - this.touchSX) <= 5 && Math.abs(y - this.touchSY) <= 5)
+      if (this.toggled && Math.abs(x - this.touchSX) <= 5 && Math.abs(y - this.touchSY) <= 5)
         this.c();
       this.touchX = x;
       this.touchY = y;

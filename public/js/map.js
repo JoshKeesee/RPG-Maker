@@ -47,7 +47,7 @@ class GameMap {
     const playersDrawn = [];
 
     ls.forEach((l) => {
-      if (l == "structure") this.drawShadows(sx, sy, ex, ey, l);
+      if (l != "ground") this.drawShadows(sx, sy, ex, ey, l);
       for (let i = sy; i < ey; i++) {
         for (let j = sx; j < ex; j++) {
           const dp = Object.keys(game.players).find((k) => {
@@ -106,49 +106,60 @@ class GameMap {
   drawShadows(sx, sy, ex, ey, l) {
     const coords = [];
     for (let i = sy; i < ey; i++) {
-      for (let j = sx; j < ex; j++) {
-        if (this.map[l][i][j] > -1) coords.push([j, i, this.map[l][i][j]]);
-      }
+        for (let j = sx; j < ex; j++) {
+            if (this.map[l][i][j] > -1) coords.push([j, i, this.map[l][i][j]]);
+        }
     }
     let ly = -1;
-    const a = 0.5;
     const setupShadow = (y, i) => {
-      game.ctx.save();
-      // game.ctx.filter = "blur(2px)";
-      game.ctx.globalCompositeOperation = "multiply";
-      game.ctx.globalAlpha = 1;
-      game.ctx.transform(1, 0, -a, 1, (this.tsize * (y + 1) + i * this.tsize) * a, 0);
-      ly = y;
+        game.ctx.save();
+        game.ctx.globalCompositeOperation = "multiply";
+        game.ctx.globalAlpha = 0.7;
+        const a = game.time;
+        game.ctx.transform(1, 0, -a, 1, (this.tsize * (y + 1) + i * this.tsize) * a, 0);
+        ly = y;
     };
     setupShadow(ly);
+    const ct = game.stats.childrenTiles, st = game.stats.structures;
     coords.forEach((c) => {
-      const [x, y, t] = c;
-      if (y > ly) {
-        game.ctx.restore();
-        let i = 0;
-        const ct = game.stats.childrenTiles, s = game.stats.structures;
-        if (l == "structure") Object.keys(ct).every((k) => {
-          if (ct[k].includes(t)) {
-            console.log(ct[k].indexOf(t) / s[k].w)
-            i = s[k].h - 1 - Math.floor(ct[k].indexOf(t) / s[k].w);
-            // console.log(i);
-            return false;
-          }
-          return true;
-        });
-        setupShadow(y, i);
-      }
-      this.drawShadow(x, y, t);
+        const [x, y] = c;
+        let t = c[2];
+        if (y > ly) {
+            game.ctx.restore();
+            let i = 0;
+            if (l == "structure") Object.keys(ct).every((k) => {
+                if (ct[k].includes(t)) {
+                    i = st[k].h - 1 - Math.floor(ct[k].indexOf(t) / st[k].w);
+                    return false;
+                }
+                return true;
+            });
+            setupShadow(y, i);
+        }
+        let a = false,
+            img = game.images["tilemap"],
+            cut = this.tilemap;
+        if (game.stats.animateTiles.includes(t)) a = true;
+        if (t / 1000 >= 1) {
+            t /= 1000;
+            img = game.images["items"];
+            cut = this.items;
+        }
+        const s = st[Object.keys(ct).find((k) => ct[k].includes(t))];
+        !s && a && (t += game.frame);
+        if (s?.animate) t += s.w * s.h * game.frame;
+        this.drawShadow(x, y, t, img, cut);
     });
     game.ctx.restore();
+    game.ctx.filter = "none";
   }
-  drawShadow(x, y, id) {
+  drawShadow(x, y, id, img, cut) {
     game.ctx.drawImage(
-      game.images["tilemap"],
-      (id % this.tilemap.width) * this.tilemap.tsize,
-      Math.floor(id / this.tilemap.width) * this.tilemap.tsize,
-      this.tilemap.tsize,
-      this.tilemap.tsize,
+      img,
+      (id % cut.width) * cut.tsize,
+      Math.floor(id / cut.width) * cut.tsize,
+      cut.tsize,
+      cut.tsize,
       x * this.tsize,
       y * this.tsize,
       this.tsize,

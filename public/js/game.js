@@ -11,11 +11,16 @@ class Game {
     this.stats = {};
     this.c = document.querySelector("#game");
     this.ctx = this.c.getContext("2d");
+    this.ctx.imageSmoothingEnabled = false;
     this.touch = new Touch(this.c);
     this.editor = new Editor(this.c);
     this.map = new GameMap();
     this.camera = new Camera();
     this.images = images;
+    this.val = 0;
+    this.time = 0.5;
+    this.timeInt = 0.00002;
+    this.timeDir = 1;
     this.socket = io({
       transports: ["websocket"],
       upgrade: false,
@@ -161,6 +166,9 @@ class Game {
       return;
     }
     this.loadingOpacity += 0.2 * (0 - this.loadingOpacity);
+    this.val++;
+    this.time += this.timeInt * this.timeDir;
+    if (Math.abs(this.time) >= 1) this.timeDir *= -1;
     this.camera.update();
     this.ctx.save();
     this.ctx.translate(this.c.width / 2, this.c.height / 2);
