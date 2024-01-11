@@ -44,21 +44,30 @@ class GameMap {
     const sy = start(game.camera.dy, game.c.height, this.h);
     const ey = end(game.camera.dy, game.c.height, this.h);
 
-    const playersDrawn = [];
-
     ls.forEach((l) => {
       if (l != "ground") this.drawShadows(sx, sy, ex, ey, l);
       for (let i = sy; i < ey; i++) {
         for (let j = sx; j < ex; j++) {
-          const dp = Object.keys(game.players).find((k) => {
+          const dp = [];
+          Object.keys(game.players).forEach((k) => {
             const p = game.players[k];
-            return (
-              Math.floor(p.x / this.tsize) == j &&
-              Math.floor((p.y + p.height) / this.tsize) == i &&
-              !playersDrawn.includes(k)
-            );
+            if (
+              Math.floor((p.x + p.width / 2) / this.tsize) == j &&
+              Math.floor((p.y + p.height) / this.tsize) == i
+            ) dp.push(k);
           });
-          if (dp && l == s) game.drawPlayer(game.players[dp]);
+          if (dp.length > 0 && l == s) {
+            dp.sort((a, b) => {
+              const ay = game.players[a].y + game.players[a].height;
+              const by = game.players[b].y + game.players[b].height;
+              return ay - by;
+            });
+            dp.forEach(id => {
+              const p = game.players[id];
+              this.drawPlayerShadow(p);
+              game.drawPlayer(p);
+            });
+          }
           if (this.map[l][i][j] != -1) {
             if (this.map[l][i][j] == 999)
               game.ctx.clearRect(
@@ -104,6 +113,10 @@ class GameMap {
     });
   }
   drawShadows(sx, sy, ex, ey, l) {
+    sx = Math.max(0, sx - 1);
+    sy = Math.max(0, sy - 1);
+    ex = Math.min(this.w, ex + 1);
+    ey = Math.min(this.h, ey + 1);
     const coords = [];
     for (let i = sy; i < ey; i++) {
         for (let j = sx; j < ex; j++) {
@@ -112,12 +125,12 @@ class GameMap {
     }
     let ly = -1;
     const setupShadow = (y, i) => {
-        game.ctx.save();
-        game.ctx.globalCompositeOperation = "multiply";
-        game.ctx.globalAlpha = 0.7;
-        const a = game.time;
-        game.ctx.transform(1, 0, -a, 1, (this.tsize * (y + 1) + i * this.tsize) * a, 0);
-        ly = y;
+      game.ctx.save();
+      game.ctx.globalAlpha = 0.5;
+      game.ctx.globalCompositeOperation = "destination-out";
+      const a = game.time;
+      game.ctx.transform(1, 0, -a, 1, (this.tsize * (y + 1) + i * this.tsize) * a, 0);
+      ly = y;
     };
     setupShadow(ly);
     const ct = game.stats.childrenTiles, st = game.stats.structures;
@@ -127,7 +140,7 @@ class GameMap {
         if (y > ly) {
             game.ctx.restore();
             let i = 0;
-            if (l == "structure") Object.keys(ct).every((k) => {
+            Object.keys(ct).every((k) => {
                 if (ct[k].includes(t)) {
                     i = st[k].h - 1 - Math.floor(ct[k].indexOf(t) / st[k].w);
                     return false;
@@ -151,7 +164,6 @@ class GameMap {
         this.drawShadow(x, y, t, img, cut);
     });
     game.ctx.restore();
-    game.ctx.filter = "none";
   }
   drawShadow(x, y, id, img, cut) {
     game.ctx.drawImage(
@@ -165,6 +177,27 @@ class GameMap {
       this.tsize,
       this.tsize,
     );
+  }
+  drawPlayerShadow(p) {
+    const y = p.y / this.tsize,
+      w = p.width / this.tsize;
+    game.ctx.save();
+    game.ctx.globalAlpha = 0.5;
+    game.ctx.globalCompositeOperation = "destination-out";
+    const a = game.time;
+    game.ctx.transform(1, 0, -a, 1, (this.tsize * y + w * this.tsize) * a, 0);
+    game.ctx.drawImage(
+      game.images[p.gender],
+      p.dir * game.character.width,
+      p.frame * game.character.height,
+      game.character.width,
+      game.character.height,
+      p.x,
+      p.y,
+      p.width,
+      p.height,
+    );
+    game.ctx.restore();
   }
   addLayer(l) {
     this.map[l] = [];

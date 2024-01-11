@@ -8,6 +8,13 @@ import images from "./images.js";
 class Game {
   constructor() {
     this.FPS = 60;
+    this.display = {
+      fps: true,
+      nametags: true,
+    };
+    this.fpsDisplayInterval = 1000;
+    this.frameCount = 0;
+    this.startTime = performance.now();
     this.stats = {};
     this.c = document.querySelector("#game");
     this.ctx = this.c.getContext("2d");
@@ -208,6 +215,17 @@ class Game {
       this.ctx.fillStyle = "#000";
       this.ctx.fillRect(0, 0, this.c.width, this.c.height);
     }
+
+    this.frameCount++;
+    if (now - this.startTime >= this.fpsDisplayInterval) {
+      this.fps = Math.round((this.frameCount * 1000) / (now - this.startTime));
+      this.frameCount = 0;
+      this.startTime = now;
+    }
+    this.ctx.fillStyle = "#fff";
+    this.ctx.font = "bold 15px sans-serif";
+    this.ctx.textAlign = "left";
+    if (this.display.fps) this.ctx.fillText(this.fps + " FPS", 10, 20);
   }
   async init() {
     this.players = {};
@@ -264,7 +282,7 @@ class Game {
     this.ctx.textAlign = "center";
     
     this.ctx.drawImage(
-      images[p.gender],
+      game.images[p.gender],
       p.dir * this.character.width,
       p.frame * this.character.height,
       this.character.width,
@@ -277,10 +295,10 @@ class Game {
   }
   drawNametag(p) {
     this.ctx.textAlign = "center";
-    this.ctx.font = "bold 15px sans-serif";
+    this.ctx.font = "bold 10px sans-serif";
     const ind = Object.values(this.players).findIndex(e => e.id == p.id);
     const n = p.name || "Player " + (ind + 1);
-    const s = 12;
+    let s = 12;
     const o = this.ctx.measureText(n).width / 2 + 5;
     const ax = p.width / 2;
     const ay = s;
@@ -292,28 +310,30 @@ class Game {
     const ty = Math.max(Math.min(p.y + ay, maxY), minY);
     const outOfViewport = tx == minX || tx == maxX || ty == minY || ty == maxY;
     const angle = Math.atan2(ty - (p.y + ax), tx - (p.x + ay)) + Math.PI / 2;
-    if (outOfViewport) {
+    if (outOfViewport && this.display.nametags) {
       this.ctx.save();
       this.ctx.translate(tx, ty);
       this.ctx.rotate(angle);
       this.ctx.translate(-tx, -ty);
-    }
+      s = 8;
+    } else this.ctx.font = "bold 15px sans-serif";
     this.ctx.beginPath();
     this.ctx.moveTo(tx, ty);
     this.ctx.lineTo(tx - s, ty - s);
     this.ctx.lineTo(tx + s, ty - s);
     this.ctx.fillStyle = p.color;
-    this.ctx.fill();
+    if (this.display.nametags || !outOfViewport) this.ctx.fill();
     this.ctx.closePath();
-    if (angle > Math.PI / 2 && outOfViewport) {
+    if (angle > Math.PI / 2 && outOfViewport && this.display.nametags) {
       this.ctx.translate(tx, ty);
       this.ctx.rotate(Math.PI);
       this.ctx.translate(-tx, -ty);
       this.ctx.translate(0, s * 4 - 5);
+      s -= 4;
     }
     this.ctx.fillStyle = "#fff";
-    this.ctx.fillText(n, tx, ty - s - 5);
-    if (outOfViewport) this.ctx.restore();
+    if (this.display.nametags || !outOfViewport) this.ctx.fillText(n, tx, ty - s - 5);
+    if (outOfViewport && this.display.nametags) this.ctx.restore();
   }
 }
 

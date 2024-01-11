@@ -66,6 +66,7 @@ io.on("connection", (socket) => {
           updateGameData();
           d.map = parseMap(d.map || createMap());
           d.mapChanges = maps[au][pr];
+          d.players = players[au][pr];
           const ws = getSize(d);
           cb(d, ws);
         });
