@@ -1,8 +1,7 @@
 node_modules
 projects
-.replit
-replit.nix
 .git
-.config
-.breakpoints
 package-lock.json
+.codesandbox/*
+.devcontainer/*
+.vscode/*
