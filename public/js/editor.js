@@ -38,17 +38,25 @@ class Editor {
     c.addEventListener("touchend", (e) => {
       const x = Math.floor(e.changedTouches[0].clientX) || 0;
       const y = Math.floor(e.changedTouches[0].clientY) || 0;
-      if (this.toggled && Math.abs(x - this.touchSX) <= 5 && Math.abs(y - this.touchSY) <= 5)
+      if (
+        this.toggled &&
+        Math.abs(x - this.touchSX) <= 5 &&
+        Math.abs(y - this.touchSY) <= 5
+      )
         this.c();
       this.touchX = x;
       this.touchY = y;
     });
-    document.addEventListener("visibilitychange", (e) => e.target.hidden && this.toggled && this.toggle());
+    document.addEventListener(
+      "visibilitychange",
+      (e) => e.target.hidden && this.toggled && this.toggle(),
+    );
   }
   toggle() {
     this.toggled = !this.toggled;
     if (this.toggled) {
-      if (document.pointerLockElement != game.c) game.c.requestPointerLock().catch(() => {});
+      if (document.pointerLockElement != game.c)
+        game.c.requestPointerLock().catch(() => {});
       game.camera.setZoom(0.7);
     } else {
       if (document.pointerLockElement == game.c) document.exitPointerLock();
@@ -64,7 +72,8 @@ class Editor {
     game.map.map[l][y][x] = id;
     this.mapChanges.push({ l, x, y, id });
     game.map.graphUpdated = false;
-		if (l != "scenery") this.setTile("scenery", x, y, -1);
+    if (l != "scenery") this.setTile("scenery", x, y, -1);
+    if (l == "ground") this.setTile("ground2", x, y, -1);
   }
   run() {
     if (!this.toggled) return;
@@ -93,11 +102,17 @@ class Editor {
 
     const dx = Math.max(
       0,
-      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
+      Math.min(
+        game.map.w - 1,
+        Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize),
+      ),
     );
     const dy = Math.max(
       0,
-      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
+      Math.min(
+        game.map.h - 1,
+        Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize),
+      ),
     );
 
     game.ctx.globalAlpha = 0.5;
@@ -137,7 +152,11 @@ class Editor {
           positionsHit.push({ x: n.x, y: n.y });
         }
       });
-    } else if (this.box && game.stats.boxTiles[this.selected] && this.clicks == 1) {
+    } else if (
+      this.box &&
+      game.stats.boxTiles[this.selected] &&
+      this.clicks == 1
+    ) {
       const sx = Math.min(this.pathSX, this.pathEX);
       const sy = Math.min(this.pathSY, this.pathEY);
       const ex = Math.max(this.pathSX, this.pathEX);
@@ -195,11 +214,17 @@ class Editor {
     this.click = false;
     const dx = Math.max(
       0,
-      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
+      Math.min(
+        game.map.w - 1,
+        Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize),
+      ),
     );
     const dy = Math.max(
       0,
-      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
+      Math.min(
+        game.map.h - 1,
+        Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize),
+      ),
     );
     const p = [game.map.graph.grid[this.pathSY][this.pathSX]].concat(this.p);
     if (
@@ -346,10 +371,15 @@ class Editor {
     this.selected = tiles[this.tileIndex];
     this.layer = "scenery";
     if (curr == 6) this.layer = "structure";
-    if (this.selected == 40 || this.selected == 76 || curr == 0 || curr == 1)
-      this.layer = "ground";
-    if (this.selected == 132 || this.selected == 134 || this.selected == 192)
+    if (game.stats.layers.ground.includes(this.selected)) this.layer = "ground";
+    if (game.stats.layers.scenery.includes(this.selected))
       this.layer = "scenery";
+    if (game.stats.layers.ground2.includes(this.selected))
+      this.layer = "ground2";
+    // if (this.selected == 40 || this.selected == 76 || curr == 0 || curr == 1)
+    //   this.layer = "ground";
+    // if (this.selected == 132 || this.selected == 134 || this.selected == 192)
+    //   this.layer = "scenery";
   }
   getAutotile(x, y, d, e) {
     const l = this.layer;
@@ -405,11 +435,17 @@ class Editor {
     game.ctx.font = size + "px Arial";
     const dx = Math.max(
       0,
-      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
+      Math.min(
+        game.map.w - 1,
+        Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize),
+      ),
     );
     const dy = Math.max(
       0,
-      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
+      Math.min(
+        game.map.h - 1,
+        Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize),
+      ),
     );
     game.ctx.fillText("Layer: " + this.layer, 10, mt + size * 1);
     game.ctx.fillText("Selected: " + this.selected, 10, mt + size * 2);
@@ -440,11 +476,17 @@ class Editor {
 
     const dx = Math.max(
       0,
-      Math.min(game.map.w - 1, Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize)),
+      Math.min(
+        game.map.w - 1,
+        Math.floor((game.camera.dx + game.c.width / 2) / game.map.tsize),
+      ),
     );
     const dy = Math.max(
       0,
-      Math.min(game.map.h - 1, Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize)),
+      Math.min(
+        game.map.h - 1,
+        Math.floor((game.camera.dy + game.c.height / 2) / game.map.tsize),
+      ),
     );
 
     if (!this.path) this.p = [];
@@ -453,10 +495,16 @@ class Editor {
       this.pathWidth = game.stats.pathTiles[this.selected];
       if (this.clicks == 1) {
         if (dx == this.pathEX && dy == this.pathEY) return;
-        if (!game.stats.dontCollide.includes(game.map.map.scenery[dy][dx])) return;
+        if (!game.stats.dontCollide.includes(game.map.map.scenery[dy][dx]))
+          return;
         this.pathEX = dx;
         this.pathEY = dy;
-        this.p = await game.map.pathTo(this.pathSX, this.pathSY, this.pathEX, this.pathEY);
+        this.p = await game.map.pathTo(
+          this.pathSX,
+          this.pathSY,
+          this.pathEX,
+          this.pathEY,
+        );
       }
     } else if (this.box && game.stats.boxTiles[this.selected]) {
       if (this.clicks == 1) {

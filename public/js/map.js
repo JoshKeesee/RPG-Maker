@@ -37,37 +37,41 @@ class GameMap {
     const end = (v, v2, v3) =>
       Math.min(
         v3,
-        Math.ceil((v + v2 + (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize) + 1,
+        Math.ceil((v + v2 + (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize) +
+          1,
       );
     const sx = start(game.camera.dx, game.c.width, this.w);
     const ex = end(game.camera.dx, game.c.width, this.w);
     const sy = start(game.camera.dy, game.c.height, this.h);
     const ey = end(game.camera.dy, game.c.height, this.h);
 
+    const drawPlayers = (dp) => {
+      dp.sort((a, b) => {
+        const ay = game.players[a].y + game.players[a].height;
+        const by = game.players[b].y + game.players[b].height;
+        return ay - by;
+      });
+      dp.forEach((id) => {
+        const p = game.players[id];
+        this.drawPlayerShadow(p);
+        game.drawPlayer(p);
+      });
+    };
+
     ls.forEach((l) => {
-      if (l != "ground") this.drawShadows(sx, sy, ex, ey, l);
+      if (!l.includes("ground")) this.drawShadows(sx, sy, ex, ey, l);
       for (let i = sy; i < ey; i++) {
         for (let j = sx; j < ex; j++) {
           const dp = [];
           Object.keys(game.players).forEach((k) => {
             const p = game.players[k];
             if (
-              Math.floor((p.x + p.width / 2) / this.tsize) == j &&
+              Math.floor(p.x / this.tsize) == j &&
               Math.floor((p.y + p.height) / this.tsize) == i
-            ) dp.push(k);
+            )
+              dp.push(k);
           });
-          if (dp.length > 0 && l == s) {
-            dp.sort((a, b) => {
-              const ay = game.players[a].y + game.players[a].height;
-              const by = game.players[b].y + game.players[b].height;
-              return ay - by;
-            });
-            dp.forEach(id => {
-              const p = game.players[id];
-              this.drawPlayerShadow(p);
-              game.drawPlayer(p);
-            });
-          }
+          if (dp.length > 0 && l == s) drawPlayers(dp);
           if (this.map[l][i][j] != -1) {
             if (this.map[l][i][j] == 999)
               game.ctx.clearRect(
@@ -119,49 +123,58 @@ class GameMap {
     ey = Math.min(this.h, ey + 1);
     const coords = [];
     for (let i = sy; i < ey; i++) {
-        for (let j = sx; j < ex; j++) {
-            if (this.map[l][i][j] > -1) coords.push([j, i, this.map[l][i][j]]);
-        }
+      for (let j = sx; j < ex; j++) {
+        const t = this.map[l][i][j];
+        if (t > -1) coords.push([j, i, t]);
+      }
     }
     let ly = -1;
     const setupShadow = (y, i) => {
       game.ctx.save();
+      const a = Math.cos(((game.time % 24) * Math.PI) / 12);
       game.ctx.globalAlpha = 0.5;
       game.ctx.globalCompositeOperation = "destination-out";
-      const a = game.time;
-      game.ctx.transform(1, 0, -a, 1, (this.tsize * (y + 1) + i * this.tsize) * a, 0);
+      game.ctx.transform(
+        1,
+        0,
+        -a,
+        1,
+        (this.tsize * (y + 1) + i * this.tsize) * a,
+        0,
+      );
       ly = y;
     };
     setupShadow(ly);
-    const ct = game.stats.childrenTiles, st = game.stats.structures;
+    const ct = game.stats.childrenTiles,
+      st = game.stats.structures;
     coords.forEach((c) => {
-        const [x, y] = c;
-        let t = c[2];
-        if (y > ly) {
-            game.ctx.restore();
-            let i = 0;
-            Object.keys(ct).every((k) => {
-                if (ct[k].includes(t)) {
-                    i = st[k].h - 1 - Math.floor(ct[k].indexOf(t) / st[k].w);
-                    return false;
-                }
-                return true;
-            });
-            setupShadow(y, i);
-        }
-        let a = false,
-            img = game.images["tilemap"],
-            cut = this.tilemap;
-        if (game.stats.animateTiles.includes(t)) a = true;
-        if (t / 1000 >= 1) {
-            t /= 1000;
-            img = game.images["items"];
-            cut = this.items;
-        }
-        const s = st[Object.keys(ct).find((k) => ct[k].includes(t))];
-        !s && a && (t += game.frame);
-        if (s?.animate) t += s.w * s.h * game.frame;
-        this.drawShadow(x, y, t, img, cut);
+      const [x, y] = c;
+      let t = c[2];
+      if (y > ly) {
+        game.ctx.restore();
+        let i = 0;
+        Object.keys(ct).every((k) => {
+          if (ct[k].includes(t)) {
+            i = st[k].h - 1 - Math.floor(ct[k].indexOf(t) / st[k].w);
+            return false;
+          }
+          return true;
+        });
+        setupShadow(y, i);
+      }
+      let a = false,
+        img = game.images["tilemap"],
+        cut = this.tilemap;
+      if (game.stats.animateTiles.includes(t)) a = true;
+      if (t / 1000 >= 1) {
+        t /= 1000;
+        img = game.images["items"];
+        cut = this.items;
+      }
+      const s = st[Object.keys(ct).find((k) => ct[k].includes(t))];
+      !s && a && (t += game.frame);
+      if (s?.animate) t += s.w * s.h * game.frame;
+      this.drawShadow(x, y, t, img, cut);
     });
     game.ctx.restore();
   }
@@ -184,7 +197,7 @@ class GameMap {
     game.ctx.save();
     game.ctx.globalAlpha = 0.5;
     game.ctx.globalCompositeOperation = "destination-out";
-    const a = game.time;
+    const a = Math.cos(((game.time % 24) * Math.PI) / 12);
     game.ctx.transform(1, 0, -a, 1, (this.tsize * y + w * this.tsize) * a, 0);
     game.ctx.drawImage(
       game.images[p.gender],
@@ -304,21 +317,22 @@ class GameMap {
         this.map[l].push([]);
         for (let j = 0; j < this.w; j++) {
           this.map[l][i].push(m[l][i][j]);
-					setTimeout(() => {
-						this.loadingProgress +=
-							this.loadingMax / (keys.length * this.w * this.h);
-						const t = `Loading ${l} layer (${k + 1}/${keys.length})`;
-						const last = this.loadingInfo[this.loadingInfo.length - 1];
-						if (last != t) {
-							this.loadingInfo.pop();
-							this.loadingInfo.push(last.replace("Loading", "Loaded"));
-							this.loadingInfo.push(t);
-						}
-					}, 1);
+          setTimeout(() => {
+            this.loadingProgress +=
+              this.loadingMax / (keys.length * this.w * this.h);
+            const t = `Loading ${l} layer (${k + 1}/${keys.length})`;
+            const last = this.loadingInfo[this.loadingInfo.length - 1];
+            if (last != t) {
+              this.loadingInfo.pop();
+              this.loadingInfo.push(last.replace("Loading", "Loaded"));
+              this.loadingInfo.push(t);
+            }
+          }, 1);
         }
       }
     });
-    if (map.w == 0 || map.h == 0) return this.loadingProgress = this.loadingMax;
+    if (map.w == 0 || map.h == 0)
+      return (this.loadingProgress = this.loadingMax);
   }
 }
 

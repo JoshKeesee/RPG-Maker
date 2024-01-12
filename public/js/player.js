@@ -1,6 +1,16 @@
 import game from "./game.js";
 
-const colors = ["#ff0000", "#0000ff", "#ffff00", "#ff00ff", "#ff8000", "#8000ff", "#00ffff", "#800000", "#000080"];
+const colors = [
+  "#ff0000",
+  "#0000ff",
+  "#ffff00",
+  "#ff00ff",
+  "#ff8000",
+  "#8000ff",
+  "#00ffff",
+  "#800000",
+  "#000080",
+];
 
 class Player {
   constructor(id, extra = {}) {
@@ -30,10 +40,14 @@ class Player {
 
     let spawn = true;
     while (spawn) {
-    	this.x = Math.floor(Math.random() * game.map.w);
-    	this.y = Math.floor(Math.random() * game.map.h);
+      this.x = Math.floor(Math.random() * game.map.w);
+      this.y = Math.floor(Math.random() * game.map.h);
       if (typeof game.map.map.scenery[this.y] == "undefined") spawn = false;
-    	else if (game.stats.dontCollide.includes(game.map.map.scenery[this.y][this.x]) && game.stats.dontCollide.includes(game.map.map.structure[this.y][this.x])) spawn = false;
+      else if (
+        game.stats.dontCollide.includes(game.map.map.scenery[this.y][this.x]) &&
+        game.stats.dontCollide.includes(game.map.map.structure[this.y][this.x])
+      )
+        spawn = false;
     }
 
     this.x *= game.map.tsize;
@@ -46,7 +60,7 @@ class Player {
     game.c.addEventListener("mousedown", (e) => (this.mouse.clicked = true));
     game.c.addEventListener("mouseup", (e) => (this.mouse.clicked = false));
 
-    Object.keys(extra).forEach((k) => this[k] = extra[k]);
+    Object.keys(extra).forEach((k) => (this[k] = extra[k]));
   }
   generateColor() {
     const l = "0123456789abcdef";
@@ -59,8 +73,11 @@ class Player {
     const dy = Math.floor((this.y + vy) / game.map.tsize);
     return !(dx >= 0 && dy >= 0 && dx < game.map.w && dy < game.map.h)
       ? true
-      : !game.stats.dontCollide.includes(game.map.map.structure[dy][dx]) ||
-          !game.stats.dontCollide.includes(game.map.map.scenery[dy][dx]);
+      : Object.keys(game.map.map)
+          .filter((e) => e != "ground")
+          .some(
+            (e) => !game.stats.dontCollide.includes(game.map.map[e][dy][dx]),
+          );
   }
   handleCollision(dir) {
     const m = this[dir + "Vel"] < 0 ? 1 : 0;

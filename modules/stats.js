@@ -1125,6 +1125,7 @@ const boxTiles = {
   1: "on",
   22: "on",
   31: "on",
+  40: "on",
   172: "on",
   181: "off",
   196: "on",
@@ -1145,6 +1146,20 @@ const childrenTiles = {
   136: [136, 137, 138, 139, 140, 141, 142, 143, 144],
 };
 
+const layers = {
+  ground: [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 40, 76,
+  ],
+  ground2: [
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 44, 45, 46, 47, 48, 49, 50, 51, 57, 58,
+    59, 60, 61, 62, 63, 172, 173, 174, 175, 176, 177, 192, 193, 194, 195, 196,
+    197, 198, 199, 200,
+  ],
+  scenery: [132, 134, 192],
+  structure: [],
+};
+
 Object.freeze(itemStats);
 Object.freeze(blockStats);
 Object.freeze(recipes);
@@ -1159,6 +1174,7 @@ Object.freeze(animateTiles);
 Object.freeze(pathTiles);
 Object.freeze(boxTiles);
 Object.freeze(childrenTiles);
+Object.freeze(layers);
 
 module.exports = {
   itemStats,
@@ -1175,4 +1191,5 @@ module.exports = {
   pathTiles,
   boxTiles,
   childrenTiles,
+  layers,
 };
