@@ -31,6 +31,7 @@ class Game {
     this.images = images;
     this.time = 0;
     this.timeInt = 0.0001;
+    this.nightTime = 15;
     this.socket = io({
       transports: ["websocket"],
       upgrade: false,
@@ -144,6 +145,7 @@ class Game {
     const delta = now - this.then;
     if (delta < 1000 / this.FPS) return;
     this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+    this.lightingCtx.clearRect(0, 0, this.c.width, this.c.height);
     this.lighting.width = this.c.width = window.innerWidth;
     this.lighting.height = this.c.height = window.innerHeight;
     this.ctx.globalAlpha = 1;
@@ -257,6 +259,7 @@ class Game {
       this.frameCount = 0;
       this.startTime = now;
     }
+    this.ctx.globalAlpha = 1;
     this.ctx.fillStyle = "#fff";
     this.ctx.font = "bold 15px sans-serif";
     this.ctx.textAlign = "left";
@@ -291,7 +294,12 @@ class Game {
         this.stats = data.stats;
         this.map.loadingInfo.push(`Loaded item and tile data!`);
         Object.keys(data.time).forEach((k) => (this[k] = data.time[k]));
-        this.map.loadingInfo.push(`Loaded in-game time!`);
+        const t = Math.floor(this.time);
+        this.map.loadingInfo.push(
+          `Loaded in-game time (${
+            Math.floor(t / 12) == 1 ? t + " PM" : (t % 12) + " AM"
+          })`,
+        );
         const numTiles = Object.keys(data.map.map).reduce(
           (a, b) => a + data.map.map[b]?.length * data.map.map[b][0]?.length,
           0,
@@ -412,14 +420,15 @@ class Game {
     if (outOfViewport && this.display.nametags) this.ctx.restore();
   }
   drawDaylight(t) {
-    const sx = ((this.time - 15) / 9) * Math.PI;
-    const s = t >= 15 ? Math.cos(sx - Math.PI / 2) : 0;
+    const sx = ((this.time - this.nightTime) / 9) * Math.PI;
+    const s = t >= this.nightTime ? Math.cos(sx - Math.PI / 2) : 0;
     this.lightingCtx.fillStyle = "#000";
     this.lightingCtx.globalAlpha = Math.min(s, 0.9);
     this.lightingCtx.fillRect(0, 0, this.c.width, this.c.height);
     this.lightingCtx.globalAlpha = 1;
   }
-  drawLights() {
+  drawLights(t) {
+    if (t < this.nightTime) return;
     const l = "scenery";
     const coords = [];
     for (let i = 0; i < this.map.h; i++) {
@@ -451,6 +460,19 @@ class Game {
       y = 10,
       s = 80,
       ds = 60;
+    if (
+      this.colliding(
+        this.player.x - this.camera.dx,
+        this.player.y - this.camera.dy,
+        this.player.width,
+        this.player.height,
+        x,
+        y,
+        ds,
+        ds,
+      )
+    )
+      this.ctx.globalAlpha = 0.2;
     this.ctx.drawImage(
       game.images.clock,
       (t % 24) * s,
@@ -462,6 +484,9 @@ class Game {
       ds,
       ds,
     );
+  }
+  colliding(x1, y1, w1, h1, x2, y2, w2, h2) {
+    return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
   }
 }
 
