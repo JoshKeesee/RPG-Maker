@@ -201,8 +201,7 @@ class Game {
     this.loadingOpacity += 0.2 * (0 - this.loadingOpacity);
 
     this.time += this.timeInt;
-    if (this.time > 24) this.time = 0;
-    if (this.time < 0) this.time = 23;
+    this.time = this.time % 24;
 
     this.camera.update();
     this.ctx.save();
