@@ -21,7 +21,6 @@ class Game {
     this.ctx = this.c.getContext("2d");
     this.ctx.imageSmoothingEnabled = false;
     this.lighting = document.createElement("canvas");
-    document.body.appendChild(this.lighting);
     this.lightingCtx = this.lighting.getContext("2d");
     this.lightingCtx.imageSmoothingEnabled = false;
     this.touch = new Touch(this.c);
@@ -460,6 +459,7 @@ class Game {
       s = 80,
       ds = 60;
     if (
+      this.player &&
       this.colliding(
         this.player.x - this.camera.dx,
         this.player.y - this.camera.dy,
