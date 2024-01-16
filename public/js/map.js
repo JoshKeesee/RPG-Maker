@@ -40,10 +40,10 @@ class GameMap {
         Math.ceil((v + v2 + (v2 / 2 / game.camera.dz - v2 / 2)) / this.tsize) +
           1,
       );
-    const sx = start(game.camera.dx, game.c.width, this.w);
-    const ex = end(game.camera.dx, game.c.width, this.w);
-    const sy = start(game.camera.dy, game.c.height, this.h);
-    const ey = end(game.camera.dy, game.c.height, this.h);
+    this.sx = start(game.camera.dx, game.c.width, this.w);
+    this.ex = end(game.camera.dx, game.c.width, this.w);
+    this.sy = start(game.camera.dy, game.c.height, this.h);
+    this.ey = end(game.camera.dy, game.c.height, this.h);
 
     const drawPlayers = (dp) => {
       dp.sort((a, b) => {
@@ -59,9 +59,9 @@ class GameMap {
     };
 
     ls.forEach((l) => {
-      if (!l.includes("ground")) this.drawShadows(sx, sy, ex, ey, l);
-      for (let i = sy; i < ey; i++) {
-        for (let j = sx; j < ex; j++) {
+      if (!l.includes("ground")) this.drawShadows(l);
+      for (let i = this.sy; i < this.ey; i++) {
+        for (let j = this.sx; j < this.ex; j++) {
           const dp = [];
           Object.keys(game.players).forEach((k) => {
             const p = game.players[k];
@@ -116,11 +116,11 @@ class GameMap {
       }
     });
   }
-  drawShadows(sx, sy, ex, ey, l) {
-    sx = Math.max(0, sx - 1);
-    sy = Math.max(0, sy - 1);
-    ex = Math.min(this.w, ex + 1);
-    ey = Math.min(this.h, ey + 1);
+  drawShadows(l) {
+    const sx = Math.max(0, this.sx - 1),
+      sy = Math.max(0, this.sy - 1),
+      ex = Math.min(this.w, this.ex + 1),
+      ey = Math.min(this.h, this.ey + 1);
     const coords = [];
     for (let i = sy; i < ey; i++) {
       for (let j = sx; j < ex; j++) {

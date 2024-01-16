@@ -4,12 +4,14 @@ import GameMap from "./map.js";
 import Camera from "./camera.js";
 import Player from "./player.js";
 import images from "./images.js";
+import { set } from "express/lib/application.js";
 
 class Game {
   constructor() {
     this.FPS = 60;
     this.display = {
       fps: true,
+      time: true,
       nametags: true,
     };
     this.fpsDisplayInterval = 1000;
@@ -31,6 +33,7 @@ class Game {
     this.time = 0;
     this.timeInt = 0.0001;
     this.nightTime = 15;
+
     this.socket = io({
       transports: ["websocket"],
       upgrade: false,
@@ -260,8 +263,10 @@ class Game {
     this.ctx.globalAlpha = 1;
     this.ctx.fillStyle = "#fff";
     this.ctx.font = "bold 15px sans-serif";
-    this.ctx.textAlign = "left";
-    if (this.display.fps) this.ctx.fillText(this.fps + " FPS", 10, 20);
+    this.ctx.textAlign = "right";
+    const x = this.c.width - 10;
+    if (this.display.fps) this.ctx.fillText(this.fps + " FPS", x, 20);
+    if (this.display.time) this.ctx.fillText(this.getTime(), x, 35);
   }
   async init() {
     this.players = {};
@@ -292,12 +297,7 @@ class Game {
         this.stats = data.stats;
         this.map.loadingInfo.push(`Loaded item and tile data!`);
         Object.keys(data.time).forEach((k) => (this[k] = data.time[k]));
-        const t = Math.floor(this.time);
-        this.map.loadingInfo.push(
-          `Loaded in-game time (${
-            Math.floor(t / 12) == 1 ? t + " PM" : (t % 12) + " AM"
-          })`,
-        );
+        this.map.loadingInfo.push(`Loaded in-game time (${this.getTime()})`);
         const numTiles = Object.keys(data.map.map).reduce(
           (a, b) => a + data.map.map[b]?.length * data.map.map[b][0]?.length,
           0,
@@ -427,10 +427,21 @@ class Game {
   }
   drawLights(t) {
     if (t < this.nightTime) return;
-    const l = "scenery";
+    const l = "scenery",
+      r = 600;
     const coords = [];
-    for (let i = 0; i < this.map.h; i++) {
-      for (let j = 0; j < this.map.w; j++) {
+    const sx = Math.max(0, this.map.sx - Math.floor(r / 2 / this.map.tsize)),
+      ex = Math.min(
+        this.map.w,
+        this.map.ex + Math.floor(r / 2 / this.map.tsize),
+      ),
+      sy = Math.max(0, this.map.sy - Math.floor(r / 2 / this.map.tsize)),
+      ey = Math.min(
+        this.map.h,
+        this.map.ey + Math.floor(r / 2 / this.map.tsize),
+      );
+    for (let i = sy; i < ey; i++) {
+      for (let j = sx; j < ex; j++) {
         if (this.map.map[l][i][j] == 32000) coords.push([j, i]);
       }
     }
@@ -438,8 +449,7 @@ class Game {
     const img = game.images.light;
     for (let i = 0; i < coords.length; i++) {
       const x = coords[i][0] * this.map.tsize + this.map.tsize / 2,
-        y = coords[i][1] * this.map.tsize + this.map.tsize / 2,
-        r = 600;
+        y = coords[i][1] * this.map.tsize + this.map.tsize / 2;
       this.lightingCtx.drawImage(
         img,
         0,
@@ -486,6 +496,13 @@ class Game {
   }
   colliding(x1, y1, w1, h1, x2, y2, w2, h2) {
     return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+  }
+  getTime() {
+    const t = this.time;
+    const h = Math.round(((t + 11) % 12) + 1);
+    const m = Math.round((t % 1) * 60);
+    const sf = t >= 12 ? "PM" : "AM";
+    return `${h}:${m < 10 ? "0" : ""}${m} ${sf}`;
   }
 }
 

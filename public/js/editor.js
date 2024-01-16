@@ -245,6 +245,7 @@ class Editor {
           }
         }
       } else {
+        this.click = true;
         const t = this.autotiling
           ? this.getAutotile(dx, dy, this.selected, this.selected)
           : this.selected;
