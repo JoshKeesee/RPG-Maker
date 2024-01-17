@@ -498,7 +498,7 @@ class Game {
   }
   getTime() {
     const t = this.time;
-    const h = Math.round(((t + 11) % 12) + 1);
+    const h = Math.round(((Math.floor(t) + 11) % 12) + 1);
     const m = Math.round((t % 1) * 60);
     const sf = t >= 12 ? "PM" : "AM";
     return `${h}:${m < 10 ? "0" : ""}${m} ${sf}`;
