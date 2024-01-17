@@ -4,7 +4,6 @@ import GameMap from "./map.js";
 import Camera from "./camera.js";
 import Player from "./player.js";
 import images from "./images.js";
-import { set } from "express/lib/application.js";
 
 class Game {
   constructor() {
